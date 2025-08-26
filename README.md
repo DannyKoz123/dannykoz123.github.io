@@ -1,2 +1,1 @@
-# dannykoz123.github.io
-My Website
+Hi, I'm Daniel!
