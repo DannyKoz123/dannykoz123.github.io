@@ -5,16 +5,61 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Danny Koz</title>
   <style>
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; display:grid; min-height:100vh; place-items:center; background:#f6f7f9}
-    .card{background:#fff; padding:32px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.08); text-align:center}
-    img{max-width:min(800px, 90vw); height:auto; border-radius:12px}
-    h1{margin:0 0 16px}
+    :root{
+      --bg:#f6f7f9; --card:#fff; --text:#0b1320; --muted:#6b7280; --ring:#e5e7eb; --accent:#111827;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b1320; --card:#101827; --text:#e5e7eb; --muted:#9aa3b2; --ring:#232b3a; --accent:#e5e7eb; }
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); display:grid; min-height:100vh; place-items:center}
+    .card{background:var(--card); padding:32px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.08); text-align:center; border:1px solid var(--ring); max-width:960px; width:min(960px,92vw)}
+    h1{margin:0 0 8px}
+    p.lead{margin:0 0 20px; color:var(--muted)}
+    img{max-width:100%; height:auto; border-radius:12px}
+    /* Social bar */
+    .social{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:18px 0 0}
+    .chip{
+      display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius:999px;
+      border:1px solid var(--ring); text-decoration:none; color:var(--text); background:transparent;
+      transition:transform .08s ease, background .2s ease, border-color .2s ease;
+    }
+    .chip:hover{transform:translateY(-1px); border-color:var(--accent); background:rgba(0,0,0,.03)}
+    .chip svg{width:18px; height:18px; flex:0 0 auto}
+    footer{margin-top:14px; font-size:.9rem; color:var(--muted)}
   </style>
 </head>
 <body>
   <main class="card">
     <h1>Hi, I'm Daniel 👋</h1>
+
+    <!-- Photo -->
     <img src="hike.jpg" alt="Danny on a forest trail">
+
+    <!-- Social bar -->
+    <div class="social" aria-label="Social links">
+      <!-- Lichess -->
+      <a class="chip" href="https://lichess.org/@/DannyKoz" target="_blank" rel="noopener" aria-label="Lichess profile">
+        <!-- Knight icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 21h14M8 21v-6a4 4 0 0 1 4-4h1l-1-3 4-3 3 3-1 4 2 2v7"/>
+          <path d="M12 11s-2 .5-3-1.5S9 5 9 5"/>
+        </svg>
+        <span>Lichess</span>
+      </a>
+
+      <!-- Monkeytype -->
+      <a class="chip" href="https://monkeytype.com/profile/DannyKoz" target="_blank" rel="noopener" aria-label="Monkeytype profile">
+        <!-- Keyboard icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M6 10h0M10 10h0M14 10h0M18 10h0M8 14h8"/>
+        </svg>
+        <span>Monkeytype</span>
+      </a>
+    </div>
+
+    <footer>More links coming soon.</footer>
   </main>
 </body>
 </html>
