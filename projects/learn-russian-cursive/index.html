@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cursive Practice</title>
+  <meta name="description" content="Practice English and Russian cursive." />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="back-link" href="../../index.html">Danny Koz</a>
+      <h1>Cursive Practice</h1>
+    </header>
+
+    <main id="app"></main>
+  </div>
+
+  <template id="profile-view-template">
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <h2>Profiles</h2>
+        </div>
+        <button id="new-profile-button" class="button primary" type="button">New profile</button>
+      </div>
+      <div id="profiles-grid" class="profiles-grid"></div>
+    </section>
+  </template>
+
+  <template id="stage-view-template">
+    <section class="panel stage-header">
+      <div>
+        <h2 id="stage-profile-name"></h2>
+      </div>
+      <div class="stage-actions">
+        <button id="practice-name-button" class="button secondary" type="button">Practice name</button>
+        <button id="change-profile-button" class="button ghost" type="button">Profiles</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <h2>Lessons</h2>
+        </div>
+      </div>
+      <div id="stages-grid" class="stages-grid"></div>
+    </section>
+  </template>
+
+  <template id="lesson-view-template">
+    <section class="lesson-practice-view">
+      <header class="lesson-control-strip">
+        <div class="lesson-context">
+          <p id="lesson-stage-label" class="section-note"></p>
+          <h2 id="lesson-title"></h2>
+        </div>
+        <div class="lesson-actions">
+          <div class="rows-control">
+            <button id="decrease-rows-button" class="mini-button" type="button" aria-label="Decrease rows">−</button>
+            <span id="rows-label">3 rows</span>
+            <button id="increase-rows-button" class="mini-button" type="button" aria-label="Increase rows">+</button>
+          </div>
+          <button id="clear-canvas-button" class="button ghost" type="button">Clear</button>
+          <button id="toggle-guides-button" class="button secondary" type="button">Guides</button>
+          <button id="complete-lesson-button" class="button primary" type="button">Next →</button>
+          <button id="back-to-stages-button" class="button ghost close-lesson-button" type="button" aria-label="Exit practice">✕</button>
+        </div>
+      </header>
+      <section class="practice-area-shell">
+        <div id="trace-sheet" class="trace-sheet">
+          <div id="reference-sheet" class="reference-text show-guides"></div>
+          <canvas id="practice-canvas"></canvas>
+        </div>
+      </section>
+    </section>
+  </template>
+
+  <template id="profile-card-template">
+    <article class="profile-card">
+      <div class="profile-card-head">
+        <div class="avatar"></div>
+        <button class="icon-button delete-profile-button" type="button" aria-label="Delete profile">×</button>
+      </div>
+      <h3 class="profile-name"></h3>
+      <p class="profile-progress"></p>
+      <button class="button primary open-profile-button" type="button">Open</button>
+    </article>
+  </template>
+
+  <template id="stage-card-template">
+    <article class="stage-card">
+      <div class="stage-card-top">
+        <div>
+          <p class="stage-kicker"></p>
+          <h3 class="stage-name"></h3>
+        </div>
+        <p class="stage-progress"></p>
+      </div>
+      <p class="stage-sample"></p>
+      <div class="progress-bar"><span></span></div>
+      <button class="button primary open-stage-button" type="button">Open</button>
+      <div class="lesson-list"></div>
+    </article>
+  </template>
+
+  <template id="lesson-chip-template">
+    <button class="lesson-chip" type="button">
+      <span class="lesson-chip-text"></span>
+      <span class="lesson-chip-meta"></span>
+    </button>
+  </template>
+
+  <dialog id="profile-dialog" class="profile-dialog">
+    <form method="dialog" id="profile-form" class="dialog-card">
+      <div class="section-heading tight">
+        <div>
+          <h2>New profile</h2>
+        </div>
+      </div>
+      <label class="field">
+        <span>Name</span>
+        <input id="profile-name-input" name="profileName" maxlength="24" required />
+      </label>
+      <label class="field">
+        <span>Practice name (English)</span>
+        <input id="profile-english-input" name="practiceNameEasy" maxlength="24" placeholder="Daniel" />
+      </label>
+      <label class="field">
+        <span>Practice name (Russian)</span>
+        <input id="profile-russian-input" name="practiceNameHard" maxlength="24" placeholder="Даниил" />
+      </label>
+      <p class="field-note">Easy mode uses English lessons. Hard mode uses Russian lessons.</p>
+      <label class="field">
+        <span>Avatar letter</span>
+        <select id="profile-avatar-input" name="avatar">
+          <option>A</option>
+          <option>D</option>
+          <option>M</option>
+          <option>N</option>
+          <option>R</option>
+          <option>S</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button class="button ghost" type="button" id="cancel-profile-button">Cancel</button>
+        <button class="button primary" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
