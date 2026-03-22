@@ -1,16 +1,14 @@
-import {
-  DEFAULT_LESSON_MODE,
-  LESSON_MODES,
-  MAX_PROFILES,
-  MODE_LABELS,
-  MODE_LANGUAGE_LABELS,
-  TOTAL_LESSONS_PER_MODE,
-  getLesson as getCurriculumLesson,
-  getLessonText,
-  getStageSample,
-  stages,
-} from "./curriculum.js";
-import { createProfileRecord, loadState, makeProgressKey, saveState } from "./storage.js";
+(() => {
+const curriculum = globalThis.CursiveCurriculum;
+const storage = globalThis.CursiveStorage;
+
+if (!curriculum || !storage) {
+  throw new Error("CursiveCurriculum and CursiveStorage must load before main.js.");
+}
+
+const { MAX_PROFILES, TOTAL_LESSONS, getLesson: getCurriculumLesson, getLessonText, getStageSample, stages } =
+  curriculum;
+const { createProfileRecord, loadState, makeProgressKey, saveState } = storage;
 
 const app = document.querySelector("#app");
 const dialog = document.querySelector("#profile-dialog");
@@ -24,7 +22,7 @@ const route = {
   stageId: null,
   lessonId: null,
 };
-const LESSON_MODE_ORDER = [LESSON_MODES.EASY, LESSON_MODES.HARD];
+const STAGE_PREVIEW_LESSON_LIMIT = 5;
 
 const STROKE_RENDER = {
   followStrength: 10,
@@ -108,6 +106,10 @@ function syncRouteFromHash() {
     route.view = "profiles";
     route.stageId = null;
     route.lessonId = null;
+  } else if (parts[0] === "stage" && parts[1]) {
+    route.view = "stage";
+    route.stageId = decodeURIComponent(parts[1]);
+    route.lessonId = null;
   } else if (parts[0] === "stages") {
     route.view = "stages";
     route.stageId = null;
@@ -142,6 +144,16 @@ function render() {
     return;
   }
 
+  if (route.view === "stage") {
+    const stage = getStageForRoute(route.stageId);
+    if (!stage) {
+      navigateToStages();
+      return;
+    }
+    renderStageDetailView(activeProfile, stage);
+    return;
+  }
+
   if (route.view === "lesson") {
     const lesson = getLessonForRoute(route.stageId, route.lessonId);
     if (!lesson) {
@@ -150,72 +162,6 @@ function render() {
     }
     renderLessonView(activeProfile, lesson);
   }
-}
-
-function normalizeLessonMode(mode) {
-  return mode === LESSON_MODES.HARD ? LESSON_MODES.HARD : DEFAULT_LESSON_MODE;
-}
-
-function modeLabel(mode) {
-  return MODE_LABELS[normalizeLessonMode(mode)] || MODE_LABELS[DEFAULT_LESSON_MODE];
-}
-
-function languageLabel(mode) {
-  return MODE_LANGUAGE_LABELS[normalizeLessonMode(mode)] || MODE_LANGUAGE_LABELS[DEFAULT_LESSON_MODE];
-}
-
-function createModeToggle({ compact = false } = {}) {
-  const wrapper = document.createElement("div");
-  wrapper.className = compact ? "mode-toggle compact" : "mode-toggle";
-
-  const buttons = document.createElement("div");
-  buttons.className = "mode-toggle-buttons";
-  buttons.setAttribute("role", "group");
-  buttons.setAttribute("aria-label", "Lesson difficulty");
-
-  for (const mode of LESSON_MODE_ORDER) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "mode-chip";
-    button.textContent = modeLabel(mode);
-    button.title = `${modeLabel(mode)} mode uses ${languageLabel(mode)} lessons.`;
-    button.setAttribute("aria-pressed", String(mode === state.lessonMode));
-    if (mode === state.lessonMode) {
-      button.classList.add("active");
-    }
-    button.addEventListener("click", () => setLessonLanguageMode(mode));
-    buttons.append(button);
-  }
-
-  wrapper.append(buttons);
-
-  if (!compact) {
-    const copy = document.createElement("p");
-    copy.className = "mode-toggle-copy section-note";
-    copy.textContent = `${modeLabel(LESSON_MODES.EASY)} = ${languageLabel(LESSON_MODES.EASY)} · ${modeLabel(LESSON_MODES.HARD)} = ${languageLabel(LESSON_MODES.HARD)}`;
-    wrapper.append(copy);
-  }
-
-  return wrapper;
-}
-
-function setLessonLanguageMode(mode) {
-  const nextMode = normalizeLessonMode(mode);
-  if (nextMode === state.lessonMode) {
-    return;
-  }
-
-  if (route.view === "lesson" && route.stageId === "custom") {
-    const profile = getActiveProfile();
-    if (profile && !getCustomPracticeText(profile, nextMode)) {
-      window.alert("Add a Russian practice name on the profile before switching Name Practice to Hard mode.");
-      return;
-    }
-  }
-
-  state.lessonMode = nextMode;
-  saveState(state);
-  render();
 }
 
 function renderProfilesView() {
@@ -284,16 +230,15 @@ function renderStagesView(profile) {
   app.replaceChildren(template.content.cloneNode(true));
 
   document.querySelector("#stage-profile-name").textContent = profile.name;
-  document.querySelector(".stage-actions")?.prepend(createModeToggle());
 
   document
     .querySelector("#change-profile-button")
     .addEventListener("click", () => navigateToProfiles());
 
   document.querySelector("#practice-name-button").addEventListener("click", () => {
-    const customText = getCustomPracticeText(profile, state.lessonMode);
+    const customText = getCustomPracticeText(profile);
     if (!customText) {
-      window.alert("Add a Russian practice name on the profile to use Name Practice in Hard mode.");
+      window.alert("Enter a profile name to use Practice name.");
       return;
     }
 
@@ -313,7 +258,8 @@ function renderStagesView(profile) {
     const progressBar = node.querySelector(".progress-bar span");
     const openStageButton = node.querySelector(".open-stage-button");
     const lessonList = node.querySelector(".lesson-list");
-    const stageSample = getStageSample(stage, state.lessonMode);
+    const stageSample = getStageSample(stage);
+    const previewLessons = stage.lessons.slice(0, STAGE_PREVIEW_LESSON_LIMIT);
 
     const completedCount = stage.lessons.filter((lesson) => isLessonComplete(profile, lesson.id)).length;
     const percent = Math.round((completedCount / stage.lessons.length) * 100);
@@ -322,36 +268,72 @@ function renderStagesView(profile) {
     name.textContent = stage.name;
     sample.textContent = stageSample;
     sample.title = stageSample;
-    sample.dataset.script = state.lessonMode;
-    stageProgress.textContent = `${modeLabel(state.lessonMode)} ${completedCount}/${stage.lessons.length}`;
+    sample.lang = "ru";
+    stageProgress.textContent = `${completedCount}/${stage.lessons.length} completed`;
     progressBar.style.width = `${percent}%`;
 
-    openStageButton.addEventListener("click", () => {
-      const nextLesson = stage.lessons.find((lesson) => !isLessonComplete(profile, lesson.id)) || stage.lessons[0];
-      navigateToLesson(stage.id, nextLesson.id);
-    });
+    openStageButton.addEventListener("click", () => navigateToStage(stage.id));
 
-    for (const lesson of stage.lessons) {
+    for (const lesson of previewLessons) {
       const chipNode = chipTemplate.content.cloneNode(true);
       const button = chipNode.querySelector(".lesson-chip");
       const text = chipNode.querySelector(".lesson-chip-text");
       const meta = chipNode.querySelector(".lesson-chip-meta");
-      const lessonText = getLessonText(lesson, state.lessonMode);
-      const done = isLessonComplete(profile, lesson.id);
+      const lessonText = getLessonText(lesson);
 
+      button.classList.add("preview");
       text.textContent = lessonText;
       text.title = lessonText;
-      text.dataset.script = state.lessonMode;
-      button.title = lessonText;
-      meta.textContent = done ? "Done" : "Lesson";
-      if (done) {
-        button.classList.add("completed");
-      }
-      button.addEventListener("click", () => navigateToLesson(stage.id, lesson.id));
+      text.lang = "ru";
+      button.title = `${stage.name}: ${lessonText}`;
+      meta.textContent = "";
+      button.addEventListener("click", () => navigateToStage(stage.id));
       lessonList.append(button);
     }
 
     stagesGrid.append(node);
+  }
+}
+
+function renderStageDetailView(profile, stage) {
+  setLessonMode(false);
+  destroyPracticeSurface();
+  ensureHandwritingFont();
+  const template = document.querySelector("#stage-detail-view-template");
+  app.replaceChildren(template.content.cloneNode(true));
+
+  const completedCount = stage.lessons.filter((lesson) => isLessonComplete(profile, lesson.id)).length;
+  const nextLesson = stage.lessons.find((lesson) => !isLessonComplete(profile, lesson.id)) || stage.lessons[0];
+  const lessonList = document.querySelector("#stage-detail-lessons");
+  const chipTemplate = document.querySelector("#lesson-chip-template");
+
+  document.querySelector("#stage-detail-kicker").textContent = `${profile.name} · Stage ${stage.order}`;
+  document.querySelector("#stage-detail-name").textContent = stage.name;
+  document.querySelector("#stage-detail-summary").textContent =
+    `${stage.lessons.length} lessons · ${completedCount}/${stage.lessons.length} completed`;
+  document.querySelector("#back-to-stages-button").addEventListener("click", navigateToStages);
+  document.querySelector("#start-stage-button").addEventListener("click", () => {
+    navigateToLesson(stage.id, nextLesson.id);
+  });
+
+  for (const lesson of stage.lessons) {
+    const chipNode = chipTemplate.content.cloneNode(true);
+    const button = chipNode.querySelector(".lesson-chip");
+    const text = chipNode.querySelector(".lesson-chip-text");
+    const meta = chipNode.querySelector(".lesson-chip-meta");
+    const lessonText = getLessonText(lesson);
+    const done = isLessonComplete(profile, lesson.id);
+
+    text.textContent = lessonText;
+    text.title = lessonText;
+    text.lang = "ru";
+    button.title = lessonText;
+    meta.textContent = done ? "Done" : "Lesson";
+    if (done) {
+      button.classList.add("completed");
+    }
+    button.addEventListener("click", () => navigateToLesson(stage.id, lesson.id));
+    lessonList.append(button);
   }
 }
 
@@ -362,14 +344,12 @@ function renderLessonView(profile, lesson) {
   app.replaceChildren(template.content.cloneNode(true));
 
   const stage = stages.find((entry) => entry.id === route.stageId);
-  const isCustomLesson = route.stageId === "custom";
-  const displayStageName = isCustomLesson ? "Name Practice" : stage?.name || "";
-  const lessonText = getLessonText(lesson, state.lessonMode);
+  const displayStageName = route.stageId === "custom" ? "Practice name" : stage?.name || "";
+  const lessonText = getLessonText(lesson);
 
-  document.querySelector(".lesson-actions")?.prepend(createModeToggle({ compact: true }));
-  document.querySelector("#lesson-stage-label").textContent = `${displayStageName} · ${modeLabel(state.lessonMode)} mode`;
+  document.querySelector("#lesson-stage-label").textContent = displayStageName;
   document.querySelector("#lesson-title").textContent = lessonText;
-  document.querySelector("#back-to-stages-button").addEventListener("click", navigateToStages);
+  document.querySelector("#back-to-stages-button").addEventListener("click", navigateBackFromLesson);
   document.querySelector("#toggle-guides-button").addEventListener("click", toggleGuides);
   document.querySelector("#clear-canvas-button").addEventListener("click", clearCanvas);
   document.querySelector("#complete-lesson-button").addEventListener("click", () => {
@@ -379,13 +359,13 @@ function renderLessonView(profile, lesson) {
       navigateToLesson(route.stageId, nextLesson.id);
       return;
     }
-    navigateToStages();
+    navigateBackFromLesson();
   });
 
   document.querySelector("#increase-rows-button").addEventListener("click", () => changeRows(1));
   document.querySelector("#decrease-rows-button").addEventListener("click", () => changeRows(-1));
 
-  buildReferenceSheet(lessonText, state.lessonMode);
+  buildReferenceSheet(lessonText);
   setupPracticeSurface();
   scheduleLessonRefresh();
   updateLessonButtons();
@@ -401,7 +381,7 @@ function refreshLessonView() {
     return;
   }
 
-  buildReferenceSheet(getLessonText(lesson, state.lessonMode), state.lessonMode);
+  buildReferenceSheet(getLessonText(lesson));
   scheduleLessonRefresh();
   updateLessonButtons();
 }
@@ -474,19 +454,17 @@ function getGuideCopiesForStage(stageId) {
   return 6;
 }
 
-function buildReferenceSheet(text, mode = state.lessonMode) {
+function buildReferenceSheet(text) {
   const referenceSheet = document.querySelector("#reference-sheet");
   if (!referenceSheet) {
     return;
   }
 
   const guideCopies = getGuideCopiesForStage(route.stageId);
-  const script = normalizeLessonMode(mode);
 
   referenceSheet.replaceChildren();
   referenceSheet.dataset.stageId = route.stageId || "";
-  referenceSheet.dataset.script = script;
-  referenceSheet.lang = script === LESSON_MODES.HARD ? "ru" : "en";
+  referenceSheet.lang = "ru";
   referenceSheet.style.setProperty("--row-count", String(practice.rows));
   referenceSheet.classList.toggle("show-guides", practice.showGuides);
 
@@ -840,7 +818,7 @@ function changeRows(delta) {
   if (route.view === "lesson") {
     const lesson = getLessonForRoute(route.stageId, route.lessonId);
     if (lesson) {
-      buildReferenceSheet(getLessonText(lesson, state.lessonMode), state.lessonMode);
+      buildReferenceSheet(getLessonText(lesson));
       scheduleLessonRefresh();
       updateLessonButtons();
     }
@@ -856,16 +834,13 @@ function handleCreateProfile(event) {
 
   const formData = new FormData(form);
   const name = String(formData.get("profileName") || "").trim();
-  const practiceNameEasy = String(formData.get("practiceNameEasy") || "").trim();
-  const practiceNameHard = String(formData.get("practiceNameHard") || "").trim();
-  const avatar = String(formData.get("avatar") || "A").trim();
 
   if (!name) {
     window.alert("Enter a name.");
     return;
   }
 
-  const profile = createProfileRecord({ name, practiceNameEasy, practiceNameHard, avatar });
+  const profile = createProfileRecord({ name });
   state.profiles.push(profile);
   state.activeProfileId = profile.id;
   saveState(state);
@@ -904,35 +879,30 @@ function closeProfileDialog() {
 }
 
 function profileProgressLabel(profile) {
-  const easyCompleted = countCompletedLessons(profile, LESSON_MODES.EASY);
-  const hardCompleted = countCompletedLessons(profile, LESSON_MODES.HARD);
-  return `Easy ${easyCompleted}/${TOTAL_LESSONS_PER_MODE} · Hard ${hardCompleted}/${TOTAL_LESSONS_PER_MODE}`;
+  const completed = countCompletedLessons(profile);
+  return `${completed}/${TOTAL_LESSONS} completed`;
 }
 
 function getActiveProfile() {
   return state.profiles.find((profile) => profile.id === state.activeProfileId) || null;
 }
 
-function countCompletedLessons(profile, mode) {
+function countCompletedLessons(profile) {
   return stages.reduce((total, stage) => {
-    const completed = stage.lessons.filter((lesson) => isLessonCompleteForMode(profile, lesson.id, mode)).length;
+    const completed = stage.lessons.filter((lesson) => isLessonComplete(profile, lesson.id)).length;
     return total + completed;
   }, 0);
 }
 
-function isLessonCompleteForMode(profile, lessonId, mode) {
-  return Boolean(profile.progress?.[makeProgressKey(normalizeLessonMode(mode), lessonId)]?.completed);
-}
-
 function isLessonComplete(profile, lessonId) {
-  return isLessonCompleteForMode(profile, lessonId, state.lessonMode);
+  return Boolean(profile.progress?.[makeProgressKey(lessonId)]?.completed);
 }
 
 function markLessonComplete(profile, lessonId) {
   if (route.stageId === "custom") {
     return;
   }
-  profile.progress[makeProgressKey(state.lessonMode, lessonId)] = {
+  profile.progress[makeProgressKey(lessonId)] = {
     completed: true,
     completedAt: Date.now(),
   };
@@ -962,33 +932,39 @@ function navigateToStages() {
   window.location.hash = "stages";
 }
 
+function navigateToStage(stageId) {
+  window.location.hash = `stage/${encodeURIComponent(stageId)}`;
+}
+
 function navigateToLesson(stageId, lessonId) {
   window.location.hash = `lesson/${encodeURIComponent(stageId)}/${encodeURIComponent(lessonId)}`;
+}
+
+function navigateBackFromLesson() {
+  if (route.stageId === "custom") {
+    navigateToStages();
+    return;
+  }
+
+  navigateToStage(route.stageId);
 }
 
 function openLesson(customLessonId) {
   navigateToLesson("custom", customLessonId);
 }
 
-function getCustomPracticeText(profile, mode) {
+function getCustomPracticeText(profile) {
   if (!profile) {
     return "";
   }
 
-  if (normalizeLessonMode(mode) === LESSON_MODES.HARD) {
-    return String(profile.practiceNameHard || "").trim();
-  }
-
-  return String(profile.practiceNameEasy || profile.name || "").trim();
+  return String(profile.practiceName || profile.name || "").trim();
 }
 
 function buildCustomNameLesson(profile) {
   return {
     id: "custom-name",
-    text: {
-      easy: getCustomPracticeText(profile, LESSON_MODES.EASY),
-      hard: getCustomPracticeText(profile, LESSON_MODES.HARD),
-    },
+    text: getCustomPracticeText(profile),
   };
 }
 
@@ -1107,6 +1083,14 @@ function pointDistance(from, to) {
   return Math.hypot(deltaX, deltaY);
 }
 
+function getStageForRoute(stageId) {
+  if (!stageId || stageId === "custom") {
+    return null;
+  }
+
+  return stages.find((stage) => stage.id === stageId) || null;
+}
+
 function getLessonForRoute(stageId, lessonId) {
   if (stageId === "custom") {
     if (lessonId !== "custom-name") {
@@ -1126,3 +1110,4 @@ function setLessonMode(enabled) {
 function rowsNoun(count) {
   return count === 1 ? "row" : "rows";
 }
+})();

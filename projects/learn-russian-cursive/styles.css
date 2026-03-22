@@ -156,8 +156,7 @@ select {
 .button,
 .mini-button,
 .icon-button,
-.lesson-chip,
-.mode-chip {
+.lesson-chip {
   border: 1px solid transparent;
   cursor: pointer;
   transition:
@@ -170,8 +169,7 @@ select {
 .button:hover,
 .mini-button:hover,
 .icon-button:hover,
-.lesson-chip:hover,
-.mode-chip:hover {
+.lesson-chip:hover {
   transform: translateY(-1px);
 }
 
@@ -277,23 +275,13 @@ select {
 
 .stage-sample,
 .lesson-chip-text {
+  font-family: var(--russian-handwriting-font);
   font-weight: 400;
+  letter-spacing: -0.01em;
   font-kerning: normal;
   font-variant-ligatures: common-ligatures contextual discretionary-ligatures;
   font-feature-settings: "liga" 1, "clig" 1, "calt" 1, "kern" 1;
   text-rendering: optimizeLegibility;
-}
-
-.stage-sample[data-script="hard"],
-.lesson-chip-text[data-script="hard"] {
-  font-family: var(--russian-handwriting-font);
-  letter-spacing: -0.01em;
-}
-
-.stage-sample[data-script="easy"],
-.lesson-chip-text[data-script="easy"] {
-  font-family: var(--latin-handwriting-font);
-  letter-spacing: 0.015em;
 }
 
 .stage-sample {
@@ -321,6 +309,29 @@ select {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 14px;
+}
+
+.stage-preview-list .lesson-chip {
+  min-width: 72px;
+}
+
+.stage-preview-list .lesson-chip-text {
+  margin-bottom: 0;
+  max-width: none;
+}
+
+.stage-preview-list .lesson-chip-meta {
+  display: none;
+}
+
+.stage-lesson-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  margin-top: 0;
+}
+
+.stage-lesson-list .lesson-chip {
+  min-width: 0;
 }
 
 .lesson-chip {
@@ -407,40 +418,6 @@ body.lesson-mode .topbar {
   flex-wrap: nowrap;
 }
 
-.mode-toggle {
-  display: grid;
-  gap: 6px;
-}
-
-.mode-toggle.compact {
-  gap: 0;
-}
-
-.mode-toggle-buttons {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
-  background: rgba(209, 213, 219, 0.42);
-}
-
-.mode-chip {
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: transparent;
-  color: #374151;
-}
-
-.mode-chip.active {
-  background: var(--accent);
-  color: white;
-}
-
-.mode-toggle-copy {
-  margin: 0;
-}
-
 .rows-control span {
   min-width: 4.2rem;
   text-align: center;
@@ -477,16 +454,24 @@ body.lesson-mode .topbar {
   --row-count: 3;
   --pattern-height: calc((var(--viewport-height) - 12rem) / var(--row-count));
   --x-height: calc(var(--pattern-height) / 6);
-  --font-size: calc(var(--pattern-height) * 0.385);
+  --font-size: calc(var(--pattern-height) * 0.41);
   --baseline-offset-ratio: 0.33;
-  --manual-offset: calc(var(--pattern-height) * -0.072);
+  --manual-offset: calc(var(--pattern-height) * 0.1);
   --bg-offset: calc(var(--font-size) * var(--baseline-offset-ratio) + var(--manual-offset));
+  --glyph-offset: 0px;
   position: absolute;
   inset: 0;
   padding: 24px 30px 18px;
+  font-family: var(--russian-handwriting-font);
   font-size: var(--font-size);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures contextual discretionary-ligatures;
+  font-feature-settings: "liga" 1, "clig" 1, "calt" 1, "kern" 1;
   line-height: var(--pattern-height);
   text-align: left;
+  text-rendering: optimizeLegibility;
   pointer-events: none;
   user-select: none;
 }
@@ -521,32 +506,6 @@ body.lesson-mode .topbar {
       transparent var(--pattern-height)
     );
   background-position: 0 var(--bg-offset);
-}
-
-.reference-text[data-script="hard"] {
-  --font-size: calc(var(--pattern-height) * 0.41);
-  --manual-offset: calc(var(--pattern-height) * 0.1);
-  --glyph-offset: 0px;
-  font-family: var(--russian-handwriting-font);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  font-kerning: normal;
-  font-variant-ligatures: common-ligatures contextual discretionary-ligatures;
-  font-feature-settings: "liga" 1, "clig" 1, "calt" 1, "kern" 1;
-  text-rendering: optimizeLegibility;
-}
-
-.reference-text[data-script="easy"] {
-  --font-size: calc(var(--pattern-height) * 0.34);
-  --manual-offset: calc(var(--pattern-height) * -0.015);
-  --glyph-offset: 0px;
-  font-family: var(--latin-handwriting-font);
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  font-kerning: normal;
-  font-variant-ligatures: common-ligatures contextual discretionary-ligatures;
-  font-feature-settings: "liga" 1, "clig" 1, "calt" 1, "kern" 1;
-  text-rendering: optimizeLegibility;
 }
 
 .practice-line {

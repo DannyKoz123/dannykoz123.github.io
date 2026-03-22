@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Cursive Practice</title>
-  <meta name="description" content="Practice English and Russian cursive." />
+  <meta name="description" content="Practice cursive with guided lessons." />
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="./styles.css" />
 </head>
@@ -44,10 +44,33 @@
     <section class="panel">
       <div class="section-heading">
         <div>
-          <h2>Lessons</h2>
+          <h2>Stages</h2>
         </div>
       </div>
       <div id="stages-grid" class="stages-grid"></div>
+    </section>
+  </template>
+
+  <template id="stage-detail-view-template">
+    <section class="panel stage-header">
+      <div>
+        <p id="stage-detail-kicker" class="section-note"></p>
+        <h2 id="stage-detail-name"></h2>
+      </div>
+      <div class="stage-actions">
+        <button id="start-stage-button" class="button primary" type="button">Start next lesson</button>
+        <button id="back-to-stages-button" class="button ghost" type="button">Stages</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <h2>Lessons</h2>
+          <p id="stage-detail-summary" class="section-note"></p>
+        </div>
+      </div>
+      <div id="stage-detail-lessons" class="lesson-list stage-lesson-list"></div>
     </section>
   </template>
 
@@ -102,8 +125,8 @@
       </div>
       <p class="stage-sample"></p>
       <div class="progress-bar"><span></span></div>
-      <button class="button primary open-stage-button" type="button">Open</button>
-      <div class="lesson-list"></div>
+      <button class="button primary open-stage-button" type="button">View stage</button>
+      <div class="lesson-list stage-preview-list"></div>
     </article>
   </template>
 
@@ -125,26 +148,6 @@
         <span>Name</span>
         <input id="profile-name-input" name="profileName" maxlength="24" required />
       </label>
-      <label class="field">
-        <span>Practice name (English)</span>
-        <input id="profile-english-input" name="practiceNameEasy" maxlength="24" placeholder="Daniel" />
-      </label>
-      <label class="field">
-        <span>Practice name (Russian)</span>
-        <input id="profile-russian-input" name="practiceNameHard" maxlength="24" placeholder="Даниил" />
-      </label>
-      <p class="field-note">Easy mode uses English lessons. Hard mode uses Russian lessons.</p>
-      <label class="field">
-        <span>Avatar letter</span>
-        <select id="profile-avatar-input" name="avatar">
-          <option>A</option>
-          <option>D</option>
-          <option>M</option>
-          <option>N</option>
-          <option>R</option>
-          <option>S</option>
-        </select>
-      </label>
       <div class="dialog-actions">
         <button class="button ghost" type="button" id="cancel-profile-button">Cancel</button>
         <button class="button primary" type="submit">Save</button>
@@ -152,6 +155,8 @@
     </form>
   </dialog>
 
-  <script type="module" src="./js/main.js"></script>
+  <script src="./js/curriculum.js" defer></script>
+  <script src="./js/storage.js" defer></script>
+  <script src="./js/main.js" defer></script>
 </body>
 </html>

@@ -1,176 +1,145 @@
-export const LESSON_MODES = {
-  EASY: "easy",
-  HARD: "hard",
-};
+(() => {
+  const RUSSIAN_ALPHABET = [
+    { lowercase: "а", uppercase: "А" },
+    { lowercase: "б", uppercase: "Б" },
+    { lowercase: "в", uppercase: "В" },
+    { lowercase: "г", uppercase: "Г" },
+    { lowercase: "д", uppercase: "Д" },
+    { lowercase: "е", uppercase: "Е" },
+    { lowercase: "ё", uppercase: "Ё" },
+    { lowercase: "ж", uppercase: "Ж" },
+    { lowercase: "з", uppercase: "З" },
+    { lowercase: "и", uppercase: "И" },
+    { lowercase: "й", uppercase: "Й" },
+    { lowercase: "к", uppercase: "К" },
+    { lowercase: "л", uppercase: "Л" },
+    { lowercase: "м", uppercase: "М" },
+    { lowercase: "н", uppercase: "Н" },
+    { lowercase: "о", uppercase: "О" },
+    { lowercase: "п", uppercase: "П" },
+    { lowercase: "р", uppercase: "Р" },
+    { lowercase: "с", uppercase: "С" },
+    { lowercase: "т", uppercase: "Т" },
+    { lowercase: "у", uppercase: "У" },
+    { lowercase: "ф", uppercase: "Ф" },
+    { lowercase: "х", uppercase: "Х" },
+    { lowercase: "ц", uppercase: "Ц" },
+    { lowercase: "ч", uppercase: "Ч" },
+    { lowercase: "ш", uppercase: "Ш" },
+    { lowercase: "щ", uppercase: "Щ" },
+    { lowercase: "ъ", uppercase: "Ъ" },
+    { lowercase: "ы", uppercase: "Ы" },
+    { lowercase: "ь", uppercase: "Ь" },
+    { lowercase: "э", uppercase: "Э" },
+    { lowercase: "ю", uppercase: "Ю" },
+    { lowercase: "я", uppercase: "Я" },
+  ];
 
-export const DEFAULT_LESSON_MODE = LESSON_MODES.EASY;
-
-export const MODE_LABELS = {
-  [LESSON_MODES.EASY]: "Easy",
-  [LESSON_MODES.HARD]: "Hard",
-};
-
-export const MODE_LANGUAGE_LABELS = {
-  [LESSON_MODES.EASY]: "English",
-  [LESSON_MODES.HARD]: "Russian",
-};
-
-export const stages = [
-  {
-    id: "lowercase-strokes",
-    order: 1,
-    name: "Lowercase Strokes",
-    sample: {
-      easy: "i l m n a o",
-      hard: "ии шш лл мм",
+  const stages = [
+    {
+      id: "lowercase-strokes",
+      order: 1,
+      name: "Lowercase Letters",
+      sample: "а б в г д",
+      lessons: RUSSIAN_ALPHABET.map(({ lowercase }) => makeLesson(`lower-${lowercase}`, lowercase)),
     },
-    lessons: [
-      makeLesson("lower-и", "i", "и"),
-      makeLesson("lower-ш", "l", "ш"),
-      makeLesson("lower-л", "m", "л"),
-      makeLesson("lower-м", "n", "м"),
-      makeLesson("lower-а", "a", "а"),
-      makeLesson("lower-о", "o", "о"),
-    ],
-  },
-  {
-    id: "joins-and-syllables",
-    order: 2,
-    name: "Joins",
-    sample: {
-      easy: "li ll mi lo th ri",
-      hard: "ма мо ми ли ши ро",
+    {
+      id: "joins-and-syllables",
+      order: 2,
+      name: "Joins",
+      sample: "ма ло ши ми ро уж",
+      lessons: [
+        makeLesson("join-ма", "ма"),
+        makeLesson("join-ло", "ло"),
+        makeLesson("join-ши", "ши"),
+        makeLesson("join-ми", "ми"),
+        makeLesson("join-ро", "ро"),
+        makeLesson("join-уж", "уж"),
+      ],
     },
-    lessons: [
-      makeLesson("join-ма", "li", "ма"),
-      makeLesson("join-ло", "ll", "ло"),
-      makeLesson("join-ши", "mi", "ши"),
-      makeLesson("join-ми", "lo", "ми"),
-      makeLesson("join-ро", "th", "ро"),
-      makeLesson("join-уж", "ri", "уж"),
-    ],
-  },
-  {
-    id: "common-words",
-    order: 3,
-    name: "Words",
-    sample: {
-      easy: "mama home school book",
-      hard: "мама дом школа книга",
+    {
+      id: "common-words",
+      order: 3,
+      name: "Words",
+      sample: "мама дом школа книга",
+      lessons: [
+        makeLesson("word-мама", "мама"),
+        makeLesson("word-дом", "дом"),
+        makeLesson("word-школа", "школа"),
+        makeLesson("word-книга", "книга"),
+        makeLesson("word-река", "река"),
+        makeLesson("word-улица", "улица"),
+      ],
     },
-    lessons: [
-      makeLesson("word-мама", "mama", "мама"),
-      makeLesson("word-дом", "home", "дом"),
-      makeLesson("word-школа", "school", "школа"),
-      makeLesson("word-книга", "book", "книга"),
-      makeLesson("word-река", "river", "река"),
-      makeLesson("word-улица", "street", "улица"),
-    ],
-  },
-  {
-    id: "uppercase-forms",
-    order: 4,
-    name: "Uppercase Forms",
-    sample: {
-      easy: "A L M D Y J",
-      hard: "А Л М Д Я Ю",
+    {
+      id: "uppercase-forms",
+      order: 4,
+      name: "Capital Letters",
+      sample: "А Б В Г Д",
+      lessons: RUSSIAN_ALPHABET.map(({ uppercase }) => makeLesson(`upper-${uppercase}`, uppercase)),
     },
-    lessons: [
-      makeLesson("upper-А", "A", "А"),
-      makeLesson("upper-Л", "L", "Л"),
-      makeLesson("upper-М", "M", "М"),
-      makeLesson("upper-Д", "D", "Д"),
-      makeLesson("upper-Я", "Y", "Я"),
-      makeLesson("upper-Ю", "J", "Ю"),
-    ],
-  },
-  {
-    id: "phrases",
-    order: 5,
-    name: "Phrases",
-    sample: {
-      easy: "Moscow, coffee, Scotland",
-      hard: "Москва, кофе, Шотландия",
+    {
+      id: "phrases",
+      order: 5,
+      name: "Phrases",
+      sample: "Москва, кофе, Шотландия",
+      lessons: [
+        makeLesson("phrase-moscow-london", "Москва красивее, чем Лондон"),
+        makeLesson("phrase-adams-brother", "Брат Адама любит Москву"),
+        makeLesson("phrase-coffee", "Кофе с молоком и с сахаром"),
+        makeLesson("phrase-scotland", "Озера и горы Шотландии очень красивые"),
+        makeLesson("phrase-smart", "Она и красива и умна"),
+        makeLesson("phrase-grandmother", "Наша бабушка обычно ходит в магазин утром"),
+      ],
     },
-    lessons: [
-      makeLesson(
-        "phrase-moscow-london",
-        "Moscow is more beautiful than London",
-        "Москва красивее, чем Лондон",
-      ),
-      makeLesson(
-        "phrase-adams-brother",
-        "Adam's brother loves Moscow",
-        "Брат Адама любит Москву",
-      ),
-      makeLesson(
-        "phrase-coffee",
-        "Coffee with milk and sugar",
-        "Кофе с молоком и с сахаром",
-      ),
-      makeLesson(
-        "phrase-scotland",
-        "Scotland's lakes and mountains are very beautiful",
-        "Озера и горы Шотландии очень красивые",
-      ),
-      makeLesson(
-        "phrase-smart",
-        "She is beautiful and smart",
-        "Она и красива и умна",
-      ),
-      makeLesson(
-        "phrase-grandmother",
-        "Our grandmother usually goes to the store in the morning",
-        "Наша бабушка обычно ходит в магазин утром",
-      ),
-    ],
-  },
-];
+  ];
 
-export const MAX_PROFILES = 4;
-export const TOTAL_LESSONS_PER_MODE = stages.reduce((sum, stage) => sum + stage.lessons.length, 0);
+  const MAX_PROFILES = 4;
+  const TOTAL_LESSONS = stages.reduce((sum, stage) => sum + stage.lessons.length, 0);
 
-export function getStage(stageId) {
-  return stages.find((stage) => stage.id === stageId) || null;
-}
+  function getStage(stageId) {
+    return stages.find((stage) => stage.id === stageId) || null;
+  }
 
-export function getLesson(stageId, lessonId) {
-  const stage = getStage(stageId);
-  return stage?.lessons.find((lesson) => lesson.id === lessonId) || null;
-}
+  function getLesson(stageId, lessonId) {
+    const stage = getStage(stageId);
+    return stage?.lessons.find((lesson) => lesson.id === lessonId) || null;
+  }
 
-export function getLessonById(lessonId) {
-  for (const stage of stages) {
-    const lesson = stage.lessons.find((entry) => entry.id === lessonId);
-    if (lesson) {
-      return { stage, lesson };
+  function getLessonById(lessonId) {
+    for (const stage of stages) {
+      const lesson = stage.lessons.find((entry) => entry.id === lessonId);
+      if (lesson) {
+        return { stage, lesson };
+      }
     }
-  }
-  return null;
-}
-
-export function getStageSample(stage, mode = DEFAULT_LESSON_MODE) {
-  return stage?.sample?.[mode] || stage?.sample?.[DEFAULT_LESSON_MODE] || "";
-}
-
-export function getLessonText(lesson, mode = DEFAULT_LESSON_MODE) {
-  if (!lesson) {
-    return "";
+    return null;
   }
 
-  if (typeof lesson.text === "string") {
-    return lesson.text;
+  function getStageSample(stage) {
+    return stage?.sample || "";
   }
 
-  return lesson.text?.[mode] || lesson.text?.[DEFAULT_LESSON_MODE] || "";
-}
+  function getLessonText(lesson) {
+    if (!lesson) {
+      return "";
+    }
 
-function makeLesson(id, easyText, hardText) {
-  return {
-    id,
-    text: {
-      easy: easyText,
-      hard: hardText,
-    },
-  };
-}
+    return typeof lesson.text === "string" ? lesson.text : "";
+  }
+
+  function makeLesson(id, text) {
+    return { id, text };
+  }
+
+  globalThis.CursiveCurriculum = Object.freeze({
+    MAX_PROFILES,
+    TOTAL_LESSONS,
+    getLesson,
+    getLessonById,
+    getLessonText,
+    getStage,
+    getStageSample,
+    stages,
+  });
+})();
