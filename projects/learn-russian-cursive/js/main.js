@@ -58,7 +58,7 @@ const practice = {
   lastFrameTime: 0,
 };
 
-const supportsDialog = typeof dialog?.showModal === "function";
+const supportsDialog = Boolean(dialog && typeof dialog.showModal === "function");
 const supportsPointerEvents = "PointerEvent" in window;
 let handwritingFontLoaded = false;
 let handwritingFontPromise = null;
@@ -74,19 +74,24 @@ window.addEventListener("orientationchange", refreshLessonView);
 
 cancelProfileButton.addEventListener("click", closeProfileDialog);
 form.addEventListener("submit", handleCreateProfile);
-dialog?.addEventListener("close", () => document.body.classList.remove("dialog-open"));
-dialog?.addEventListener("cancel", (event) => {
-  event.preventDefault();
-  closeProfileDialog();
-});
-dialog?.addEventListener("click", (event) => {
-  if (event.target === dialog) {
+if (dialog) {
+  dialog.addEventListener("close", () => document.body.classList.remove("dialog-open"));
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
     closeProfileDialog();
-  }
-});
-document.fonts?.ready?.then(refreshLessonView).catch(() => {
-  // Ignore font API failures and rely on the normal render path.
-});
+  });
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      closeProfileDialog();
+    }
+  });
+}
+
+if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
+  document.fonts.ready.then(refreshLessonView).catch(() => {
+    // Ignore font API failures and rely on the normal render path.
+  });
+}
 
 syncRouteFromHash();
 render();
@@ -168,7 +173,7 @@ function renderProfilesView() {
   setLessonMode(false);
   destroyPracticeSurface();
   const template = document.querySelector("#profile-view-template");
-  app.replaceChildren(template.content.cloneNode(true));
+  replaceElementChildren(app, template.content.cloneNode(true));
 
   const newProfileButton = document.querySelector("#new-profile-button");
   const profilesGrid = document.querySelector("#profiles-grid");
@@ -212,7 +217,7 @@ function renderProfilesView() {
 
       state.profiles = state.profiles.filter((entry) => entry.id !== profile.id);
       if (state.activeProfileId === profile.id) {
-        state.activeProfileId = state.profiles[0]?.id || null;
+        state.activeProfileId = state.profiles[0] ? state.profiles[0].id : null;
       }
       saveState(state);
       render();
@@ -227,7 +232,7 @@ function renderStagesView(profile) {
   destroyPracticeSurface();
   ensureHandwritingFont();
   const template = document.querySelector("#stage-view-template");
-  app.replaceChildren(template.content.cloneNode(true));
+  replaceElementChildren(app, template.content.cloneNode(true));
 
   document.querySelector("#stage-profile-name").textContent = profile.name;
 
@@ -300,7 +305,7 @@ function renderStageDetailView(profile, stage) {
   destroyPracticeSurface();
   ensureHandwritingFont();
   const template = document.querySelector("#stage-detail-view-template");
-  app.replaceChildren(template.content.cloneNode(true));
+  replaceElementChildren(app, template.content.cloneNode(true));
 
   const completedCount = stage.lessons.filter((lesson) => isLessonComplete(profile, lesson.id)).length;
   const nextLesson = stage.lessons.find((lesson) => !isLessonComplete(profile, lesson.id)) || stage.lessons[0];
@@ -341,10 +346,10 @@ function renderLessonView(profile, lesson) {
   setLessonMode(true);
   ensureHandwritingFont();
   const template = document.querySelector("#lesson-view-template");
-  app.replaceChildren(template.content.cloneNode(true));
+  replaceElementChildren(app, template.content.cloneNode(true));
 
   const stage = stages.find((entry) => entry.id === route.stageId);
-  const displayStageName = route.stageId === "custom" ? "Practice name" : stage?.name || "";
+  const displayStageName = route.stageId === "custom" ? "Practice name" : (stage ? stage.name || "" : "");
   const lessonText = getLessonText(lesson);
 
   document.querySelector("#lesson-stage-label").textContent = displayStageName;
@@ -430,6 +435,7 @@ function scheduleLessonRefresh(frames = 2) {
       return;
     }
 
+    syncReferenceSheetMetrics(document.querySelector("#reference-sheet"));
     syncCanvasResolution();
     redrawCanvas();
 
@@ -462,7 +468,7 @@ function buildReferenceSheet(text) {
 
   const guideCopies = getGuideCopiesForStage(route.stageId);
 
-  referenceSheet.replaceChildren();
+  clearElement(referenceSheet);
   referenceSheet.dataset.stageId = route.stageId || "";
   referenceSheet.lang = "ru";
   referenceSheet.style.setProperty("--row-count", String(practice.rows));
@@ -481,6 +487,21 @@ function buildReferenceSheet(text) {
 
     referenceSheet.append(line);
   }
+
+  syncReferenceSheetMetrics(referenceSheet);
+}
+
+function syncReferenceSheetMetrics(referenceSheet) {
+  if (!referenceSheet || practice.rows <= 0) {
+    return;
+  }
+
+  const { height } = referenceSheet.getBoundingClientRect();
+  if (height <= 0) {
+    return;
+  }
+
+  referenceSheet.style.setProperty("--pattern-height", `${height / practice.rows}px`);
 }
 
 function setupPracticeSurface() {
@@ -640,7 +661,9 @@ function handlePointerDown(event) {
     practice.activePointerId = event.pointerId;
   }
   try {
-    practice.canvas.setPointerCapture?.(event.pointerId);
+    if (practice.canvas && typeof practice.canvas.setPointerCapture === "function") {
+      practice.canvas.setPointerCapture(event.pointerId);
+    }
   } catch {
     // Firefox can reject capture during rapid route or tab changes. Drawing still works without it.
   }
@@ -659,9 +682,11 @@ function handlePointerUp(event) {
     return;
   }
 
-  if (practice.canvas && typeof event?.pointerId === "number") {
+  if (practice.canvas && event && typeof event.pointerId === "number") {
     try {
-      practice.canvas.releasePointerCapture?.(event.pointerId);
+      if (typeof practice.canvas.releasePointerCapture === "function") {
+        practice.canvas.releasePointerCapture(event.pointerId);
+      }
     } catch {
       // Ignore capture-release mismatches when pointer state changed outside this canvas.
     }
@@ -786,7 +811,9 @@ function clearCanvas() {
 function toggleGuides() {
   practice.showGuides = !practice.showGuides;
   const referenceSheet = document.querySelector("#reference-sheet");
-  referenceSheet?.classList.toggle("show-guides", practice.showGuides);
+  if (referenceSheet) {
+    referenceSheet.classList.toggle("show-guides", practice.showGuides);
+  }
   updateLessonButtons();
 }
 
@@ -866,7 +893,7 @@ function openProfileDialog() {
 
 function closeProfileDialog() {
   document.body.classList.remove("dialog-open");
-  if (!dialog?.hasAttribute("open")) {
+  if (!dialog || !dialog.hasAttribute("open")) {
     return;
   }
 
@@ -895,7 +922,8 @@ function countCompletedLessons(profile) {
 }
 
 function isLessonComplete(profile, lessonId) {
-  return Boolean(profile.progress?.[makeProgressKey(lessonId)]?.completed);
+  const progressRecord = profile && profile.progress ? profile.progress[makeProgressKey(lessonId)] : null;
+  return Boolean(progressRecord && progressRecord.completed);
 }
 
 function markLessonComplete(profile, lessonId) {
@@ -1109,5 +1137,18 @@ function setLessonMode(enabled) {
 
 function rowsNoun(count) {
   return count === 1 ? "row" : "rows";
+}
+
+function clearElement(element) {
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+}
+
+function replaceElementChildren(element, child) {
+  clearElement(element);
+  if (typeof child !== "undefined" && child !== null) {
+    element.appendChild(child);
+  }
 }
 })();

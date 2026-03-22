@@ -400,7 +400,8 @@ body.lesson-mode .topbar {
 
 .lesson-context h2 {
   margin-top: 2px;
-  font-size: clamp(1.1rem, 1.9vw, 1.45rem);
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+  line-height: 0.94;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -448,20 +449,29 @@ body.lesson-mode .topbar {
   overflow: hidden;
   border: 4px solid var(--lesson-border);
   background: var(--lesson-surface);
+  --trace-pad-top: 24px;
+  --trace-pad-right: 30px;
+  --trace-pad-bottom: 18px;
+  --trace-pad-left: 30px;
+}
+
+.trace-sheet-surface {
+  position: absolute;
+  inset: var(--trace-pad-top) var(--trace-pad-right) var(--trace-pad-bottom) var(--trace-pad-left);
 }
 
 .reference-text {
   --row-count: 3;
   --pattern-height: calc((var(--viewport-height) - 12rem) / var(--row-count));
   --x-height: calc(var(--pattern-height) / 6);
-  --font-size: calc(var(--pattern-height) * 0.41);
+  --font-size: calc(var(--pattern-height) * 0.78);
+  --guide-gap: clamp(1rem, calc(var(--font-size) * 0.28), 2.75rem);
   --baseline-offset-ratio: 0.33;
   --manual-offset: calc(var(--pattern-height) * 0.1);
   --bg-offset: calc(var(--font-size) * var(--baseline-offset-ratio) + var(--manual-offset));
   --glyph-offset: 0px;
   position: absolute;
   inset: 0;
-  padding: 24px 30px 18px;
   font-family: var(--russian-handwriting-font);
   font-size: var(--font-size);
   font-weight: 400;
@@ -517,19 +527,22 @@ body.lesson-mode .topbar {
 .reference-text[data-stage-id="common-words"] .practice-line {
   display: flex;
   align-items: flex-start;
-  gap: min(48vw, 28rem);
+  gap: min(52vw, 32rem);
 }
 
 .letter-guide {
   display: inline-block;
-  margin-inline-end: 0.55rem;
   color: var(--handwriting-guide-ink);
   transform: translateY(var(--glyph-offset, 0px));
   -webkit-text-stroke: 0;
   text-stroke: 0;
 }
 
-.reference-text[data-stage-id="common-words"] .letter-guide {
+.letter-guide:not(:last-child) {
+  margin-inline-end: var(--guide-gap);
+}
+
+.reference-text[data-stage-id="common-words"] .letter-guide:not(:last-child) {
   margin-inline-end: 0;
 }
 
@@ -651,14 +664,21 @@ body.lesson-mode .topbar {
     gap: 6px;
   }
 
+  body.lesson-mode .trace-sheet {
+    --trace-pad-top: 18px;
+    --trace-pad-right: 12px;
+    --trace-pad-bottom: 14px;
+    --trace-pad-left: 12px;
+  }
+
   body.lesson-mode .reference-text {
-    padding: 18px 12px 14px;
     --pattern-height: calc((var(--viewport-height) - 16rem) / var(--row-count));
     --manual-offset: calc(var(--pattern-height) * -0.085);
   }
 
   body.lesson-mode .letter-guide {
-    margin-inline-end: 0.38rem;
+    color: var(--handwriting-guide-ink);
+    -webkit-text-fill-color: currentColor;
     -webkit-text-stroke: 0;
     text-stroke: 0;
   }

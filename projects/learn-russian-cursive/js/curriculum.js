@@ -103,7 +103,7 @@
 
   function getLesson(stageId, lessonId) {
     const stage = getStage(stageId);
-    return stage?.lessons.find((lesson) => lesson.id === lessonId) || null;
+    return stage ? stage.lessons.find((lesson) => lesson.id === lessonId) || null : null;
   }
 
   function getLessonById(lessonId) {
@@ -117,7 +117,7 @@
   }
 
   function getStageSample(stage) {
-    return stage?.sample || "";
+    return stage ? stage.sample || "" : "";
   }
 
   function getLessonText(lesson) {

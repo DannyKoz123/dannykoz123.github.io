@@ -51,7 +51,7 @@
 
   function createProfileRecord({ name, practiceName, avatar }) {
     return normalizeProfileRecord({
-      id: globalThis.crypto?.randomUUID?.() || String(Date.now()),
+      id: createRecordId(),
       name,
       practiceName,
       avatar,
@@ -72,7 +72,7 @@
     ).trim();
 
     return {
-      id: profile.id || globalThis.crypto?.randomUUID?.() || String(Date.now()),
+      id: profile.id || createRecordId(),
       name,
       practiceName,
       avatar,
@@ -107,8 +107,8 @@
       const existing = nextProgress[lessonId];
 
       nextProgress[lessonId] = {
-        completed: Boolean(existing?.completed || value.completed),
-        completedAt: Math.max(Number(existing?.completedAt) || 0, completedAt),
+        completed: Boolean((existing && existing.completed) || value.completed),
+        completedAt: Math.max(Number(existing && existing.completedAt) || 0, completedAt),
       };
     }
 
@@ -126,6 +126,15 @@
     }
 
     return normalizedKey;
+  }
+
+  function createRecordId() {
+    const cryptoApi = globalThis.crypto;
+    if (cryptoApi && typeof cryptoApi.randomUUID === "function") {
+      return cryptoApi.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
   }
 
   globalThis.CursiveStorage = Object.freeze({
