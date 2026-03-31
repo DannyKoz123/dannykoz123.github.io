@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Method of Images Explorer | Danny Koz</title>
+  <meta
+    name="description"
+    content="Interactive electrostatics simulator for the method of image charges."
+  />
+  <link rel="stylesheet" href="../../styles.css" />
+  <style>
+    .page-shell.page-shell--wide {
+      width: min(100%, calc(100vw - 32px));
+      padding: 24px 0 40px;
+    }
+
+    .card.project-card--wide {
+      padding: clamp(20px, 2.2vw, 32px);
+    }
+
+    .project-stack {
+      display: grid;
+      gap: 24px;
+    }
+
+    .project-hero {
+      display: grid;
+      gap: 20px;
+    }
+
+    .project-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .project-actions .chip.active {
+      text-decoration: none;
+    }
+
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .project-grid .tile {
+      min-height: unset;
+    }
+
+    .preview-shell {
+      border: 1px solid var(--ring);
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .preview-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--ring);
+      background: linear-gradient(180deg, var(--accent-soft), transparent 90%);
+    }
+
+    .preview-header h2,
+    .preview-header p {
+      margin: 0;
+    }
+
+    .preview-header p {
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .preview-frame {
+      display: block;
+      width: 100%;
+      height: min(78vh, 900px);
+      border: 0;
+      background: #081019;
+    }
+
+    .project-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .page-shell.page-shell--wide {
+        width: min(100%, calc(100vw - 20px));
+        padding: 16px 0 28px;
+      }
+
+      .card.project-card--wide {
+        padding: 18px;
+      }
+
+      .preview-frame {
+        height: 70vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell page-shell--wide">
+    <section class="card project-stack project-card--wide">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Method of Images Explorer</h1>
+        </div>
+
+        <nav class="nav" aria-label="Primary">
+          <a class="chip" href="../../index.html">Home</a>
+          <a class="chip active" href="../index.html">Projects</a>
+          <a class="chip" href="../../profiles/">Profiles</a>
+        </nav>
+      </div>
+
+      <section class="project-hero">
+        <div class="project-actions">
+          <a class="chip active" href="./app/#/plane">Open grounded plane</a>
+          <a class="chip" href="./app/#/sphere">Open grounded sphere</a>
+        </div>
+      </section>
+
+      <section class="preview-shell">
+        <iframe
+          class="preview-frame"
+          src="./app/#/plane"
+          title="Method of Images Explorer"
+          loading="lazy"
+        ></iframe>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
