@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monster Chess — analysis &amp; solver</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>♚</text></svg>" />
+</head>
+<body>
+  <header class="masthead">
+    <a href="../" style="color:#5da548;text-decoration:none;font:600 13px 'IBM Plex Mono',monospace;align-self:center" title="Back to projects">← projects</a>
+    <h1 class="wordmark">MONSTER<span class="glow">CHESS</span></h1>
+    <span class="tagline">analysis board &amp; solver — White moves twice, kings get captured</span>
+  </header>
+
+  <main class="layout">
+    <div class="board-col">
+      <div class="evalbar">
+        <div class="fill" id="eval-fill"></div>
+        <div class="tick"></div>
+        <div class="readout black-side" id="eval-black"></div>
+        <div class="readout white-side" id="eval-white"></div>
+      </div>
+      <div class="board-wrap">
+        <div id="board"></div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <section>
+        <div class="statusline">
+          <span class="turn-meter" id="turn-meter"></span>
+          <span id="status-text"></span>
+          <span class="result-banner" id="result-banner" style="display:none"></span>
+        </div>
+      </section>
+
+      <section>
+        <div class="engine-head">
+          <label class="switch">
+            <input type="checkbox" id="engine-toggle" />
+            <span class="lamp"></span>
+            <span>Engine</span>
+          </label>
+          <select id="multipv" title="Lines">
+            <option value="1">1 line</option>
+            <option value="2">2 lines</option>
+            <option value="3">3 lines</option>
+          </select>
+          <select id="depth" title="Depth limit">
+            <option value="16">depth 16</option>
+            <option value="22">depth 22</option>
+            <option value="28" selected>depth 28</option>
+            <option value="36">depth 36</option>
+          </select>
+          <button class="btn primary" id="play-best" title="Play the engine's best move(s)">▶ best</button>
+        </div>
+        <div class="score-big" id="score-big">—</div>
+        <span class="solved-badge" id="solved-badge" style="display:none">FORCED WIN</span>
+        <div class="telemetry" id="telemetry">engine off</div>
+        <div class="lines" id="lines"></div>
+      </section>
+
+      <section class="moves-section">
+        <div class="movelist" id="movelist"></div>
+      </section>
+
+      <section>
+        <div class="controls-row">
+          <button class="btn" id="btn-start" title="Start (Home)">⏮</button>
+          <button class="btn" id="btn-prev" title="Back (←)">◀</button>
+          <button class="btn" id="btn-next" title="Forward (→)">▶</button>
+          <button class="btn" id="btn-end" title="End (End)">⏭</button>
+          <span class="spacer"></span>
+          <button class="btn" id="btn-flip" title="Flip board (f)">⇅ flip</button>
+          <button class="btn" id="btn-copy-game" title="Copy the game text">⧉ game</button>
+          <button class="btn" id="btn-new">★ new</button>
+        </div>
+        <div class="fen-row">
+          <input id="fen-input" spellcheck="false" />
+          <button class="btn" id="btn-fen-load">load</button>
+          <button class="btn" id="btn-fen-copy">copy</button>
+        </div>
+        <div class="hint-line">
+          <kbd>←</kbd><kbd>→</kbd> navigate · <kbd>f</kbd> flip · White plays two actions per turn;
+          mid-turn FENs end in <kbd>m2</kbd>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
