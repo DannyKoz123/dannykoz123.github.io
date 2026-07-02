@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GTO Studio | Danny Koz</title>
+  <meta name="description" content="GTO Studio — a local, end-to-end NLH poker solver and study suite: custom solves, node locking, aggregate reports, a trainer, and a hand history analyzer with honest EV grading." />
+  <link rel="stylesheet" href="../../styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>♠</text></svg>" />
+</head>
+<body>
+  <main class="page-shell page-shell-wide">
+    <section class="card">
+      <div class="page-header">
+        <div>
+          <p class="eyebrow">Danny Koz</p>
+          <h1 class="page-title">GTO Studio</h1>
+        </div>
+        <nav class="nav" aria-label="Primary">
+          <a class="chip" href="../../index.html">Home</a>
+          <a class="chip" href="../">Projects</a>
+        </nav>
+      </div>
+
+      <p class="gto-lead">
+        A local, end-to-end no-limit hold'em solver and study suite &mdash; GTO-Wizard-style
+        studying without the subscription, the cloud, or the caps. Configure any spot, solve
+        it on your own CPU in seconds, browse the strategy, import your real hands, find your
+        leaks, and drill them. Everything runs on localhost; your hands never leave your machine.
+      </p>
+
+      <figure class="gto-shot gto-shot-hero">
+        <a href="./img/ranges-tab.png"><img src="./img/ranges-tab.png" alt="GTO Studio postflop browser on K♠7♦2♣: strategy matrix with mixed-strategy colors, made-hand category table, equity buckets, and equity distribution curves for both players" loading="eager" /></a>
+        <figcaption>The postflop browser's Ranges tab on K♠7♦2♣ &mdash; strategy by made-hand
+        category, equity-bucket quartiles, and sorted equity-distribution curves for both
+        players at the same node.</figcaption>
+      </figure>
+
+      <div class="gto-shots">
+        <figure class="gto-shot">
+          <a href="./img/postflop.png"><img src="./img/postflop.png" alt="Solved strategy matrix with per-action EVs and node locking panel" loading="lazy" /></a>
+          <figcaption>Custom solves with full tree navigation, per-action EVs, and
+          Pio-style node locking (station / nit / maniac presets).</figcaption>
+        </figure>
+        <figure class="gto-shot">
+          <a href="./img/analyzer.png"><img src="./img/analyzer.png" alt="Hand history analyzer with imported hands, grade chips, and coverage badges" loading="lazy" /></a>
+          <figcaption>The analyzer: PHH and PokerStars-style imports, per-decision grades
+          (here a heads-up call graded a 1.21bb blunder by engine EV), and loud coverage
+          badges &mdash; nothing is dropped silently.</figcaption>
+        </figure>
+      </div>
+
+      <h2 class="gto-h2">What it does</h2>
+      <ul class="gto-features">
+        <li><strong>Postflop solving</strong> &mdash; arbitrary heads-up spots (ranges, board,
+          stacks, rake, bet-size trees) solved live by discounted CFR, with a strategy-matrix
+          browser: action mixes per hand class, per-combo EV/EQ, turn/river runouts.</li>
+        <li><strong>Ranges analytics</strong> &mdash; made-hand & draw categories with
+          documented boundaries, strategy-by-category tables, equity buckets, equity
+          distribution curves with an EV overlay, and category filters painted onto the matrix.</li>
+        <li><strong>Node locking</strong> &mdash; force any strategy at any node (custom mix or
+          player-type presets) and re-solve to see the exploitative adjustments.</li>
+        <li><strong>Aggregated reports</strong> &mdash; solve a texture-stratified flop subset
+          (25/49/95/all 1755), then sort, filter, and group by texture to build heuristics;
+          runout reports aggregate every turn/river card inside a solution.</li>
+        <li><strong>Preflop engine</strong> &mdash; a built-in CFR+ engine on the 169 hand
+          classes with exact card-removal, validated against published 10bb push/fold Nash,
+          now exposing per-class EVs for grading.</li>
+        <li><strong>6-max chart library</strong> &mdash; editable position-by-position baseline
+          charts; blind-battle charts replaceable by the solver's own output.</li>
+        <li><strong>Trainer</strong> &mdash; preflop chart drills and full postflop spot drills,
+          every decision graded by EV loss with per-action EV reveals.</li>
+        <li><strong>Hand history analyzer</strong> &mdash; import real hands (PHH or
+          PokerStars-style text, auto-detected), grade every decision vs GTO, browse a
+          replayer with per-decision GTO mixes, and get a leaks dashboard: bb/100 lost by
+          position, street, and spot family, with the biggest blunders one click from a
+          trainer drill of that exact leak.</li>
+      </ul>
+
+      <figure class="gto-shot">
+        <a href="./img/trainer.png"><img src="./img/trainer.png" alt="Trainer preflop drill: BB vs UTG open holding T♣Q♠ with fold, 3-bet, and call options" loading="lazy" /></a>
+        <figcaption>The trainer mid-drill: BB defense vs an UTG open, graded against the
+        chart mix &mdash; or against <em>your own</em> edited ranges.</figcaption>
+      </figure>
+
+      <h2 class="gto-h2">Why it's different</h2>
+      <ul class="gto-features">
+        <li><strong>Local-first.</strong> No subscription, no upload caps, no cloud. The
+          analyzer processes complete hand histories without them ever leaving your machine.</li>
+        <li><strong>Honest EV.</strong> Your observed bet sizes are injected into the solve
+          tree <em>exactly</em> &mdash; no silent nearest-size snapping. When memory forces an
+          approximation, the grade carries a badge saying so and by how much, and the
+          dashboard shows a coverage report: what % of decisions were graded and why the
+          rest were skipped.</li>
+        <li><strong>A closed loop.</strong> Analyzer leaks become trainer drills of those
+          exact spots, with retest deltas &mdash; study what you actually misplay, not generic
+          scenarios.</li>
+        <li><strong>Grade against your gameplan.</strong> Chart edits are first-class: preflop
+          grading honors your range overlays, so the analyzer can measure deviation from
+          <em>your</em> strategy, not just equilibrium.</li>
+      </ul>
+
+      <h2 class="gto-h2">Under the hood</h2>
+      <p class="gto-tech">
+        Rust workspace (axum API, a from-scratch preflop CFR+ engine, and the open-source
+        <code>postflop-solver</code> DCFR engine) + SvelteKit&nbsp;2 / Svelte&nbsp;5 frontend
+        with zero runtime npm dependencies. ~470 automated tests across both sides, every
+        merge gated on the full suite. AGPL-3.0. It's a desktop-class tool that runs on
+        localhost rather than a hosted demo &mdash; this page is the tour.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
