@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monster Chess Bot | Danny Koz</title>
+  <meta name="description" content="A from-scratch Rust engine for Monster Chess, built to beat the strongest public Monster bots on PlayStrategy." />
+  <link rel="stylesheet" href="../../styles.css" />
+  <style>
+    .project-body{max-width:44rem;margin:0 auto}
+    .project-body h2{margin:30px 0 10px;font-size:1.25rem;letter-spacing:-.01em}
+    .project-body p,.project-body li{line-height:1.65}
+    .project-body p{margin:0 0 14px}
+    .project-body ul{margin:0 0 14px;padding-left:1.2rem}
+    .project-body li{margin:6px 0}
+    .project-body .lead{margin-bottom:8px}
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <section class="card">
+      <div class="page-header">
+        <div>
+          <p class="eyebrow">Projects</p>
+        </div>
+
+        <nav class="nav" aria-label="Primary">
+          <a class="chip" href="../../index.html">Home</a>
+          <a class="chip active" href="../">Projects</a>
+          <a class="chip" href="../../profiles/">Profiles</a>
+        </nav>
+      </div>
+
+      <div class="project-body">
+        <h1 class="page-title">Monster Chess Bot</h1>
+        <p class="lead">A from-scratch, dependency-free Rust engine for Monster Chess, built to overtake the strongest public Monster bots on playstrategy.org.</p>
+
+        <h2>The variant</h2>
+        <p>Monster Chess is wildly asymmetric. White gets only a king and the c2&ndash;f2 pawns, but plays <strong>two moves every turn</strong>; Black keeps the full standard army and plays one. You win by capturing the enemy king, and a side with no legal move loses &mdash; there are no stalemates. White may even pass through check on his first move, as long as the turn ends with the king safe.</p>
+        <p>Those twists break most standard chess-engine assumptions: &ldquo;check&rdquo; means capturable across an entire two-move turn, en passant works asymmetrically for the two sides, and the branching factor of White&rsquo;s move pairs explodes compared to normal chess.</p>
+
+        <h2>The engine</h2>
+        <ul>
+          <li>A complete Monster rules layer &mdash; compound-turn move generation, legality, castling, and both en passant quirks &mdash; backed by perft and regression tests.</li>
+          <li>Search over whole turns rather than single plies: iterative-deepening alpha-beta with a transposition table, aspiration windows, PVS-style re-searches, killer/history move ordering, and a bounded quiescence layer for captures, promotions, and forced evasions.</li>
+          <li>A handcrafted Monster-specific evaluation: white king pressure and its two-move capture radius, black king shelter, promotion races, and tempo.</li>
+          <li>A tactical regression suite of Monster motifs &mdash; two-move king hunts, promotion-capture mates, and quiet preparatory first moves.</li>
+        </ul>
+
+        <h2>Status</h2>
+        <p>Written in Rust with zero external crates. The engine plays locally today; up next are a self-play match harness and the PlayStrategy connector to take it online against the reigning public bots.</p>
+
+        <h2>Try the variant</h2>
+        <p>You can play and analyze Monster Chess in the browser with the companion <a href="../monster-chess/">Monster Chess analysis board</a>, which includes a solver that hunts for forced wins.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
