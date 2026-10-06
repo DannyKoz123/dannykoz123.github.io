@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Monster Chess — analysis &amp; solver</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=e08a7cb0cd896325" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>♚</text></svg>" />
 </head>
 <body>
   <header class="masthead">
     <a href="../" style="color:#5da548;text-decoration:none;font:600 13px 'IBM Plex Mono',monospace;align-self:center" title="Back to projects">← projects</a>
     <h1 class="wordmark">MONSTER<span class="glow">CHESS</span></h1>
-    <span class="tagline">analysis board &amp; solver — White moves twice, kings get captured</span>
+    <span class="tagline">play &amp; analyze — White moves twice, kings get captured</span>
   </header>
 
   <main class="layout">
@@ -28,6 +28,36 @@
     </div>
 
     <aside class="panel">
+      <section class="play-section">
+        <div id="play-setup">
+          <div class="play-heading">Play the computer</div>
+          <div class="play-settings">
+            <span>You: 3 minutes + 2 seconds per turn</span>
+            <label>Computer
+              <select id="computer-time" aria-label="Computer thinking time per turn">
+                <option value="5000">5 seconds / turn</option>
+                <option value="10000" selected>10 seconds / turn</option>
+              </select>
+            </label>
+          </div>
+          <div class="controls-row">
+            <button class="btn primary" id="play-white">Play as White</button>
+            <button class="btn primary" id="play-black">Play as Black</button>
+          </div>
+          <div class="hint-line">New game · your clock starts with your first action.</div>
+        </div>
+        <div id="play-active" hidden>
+          <div id="play-status" class="play-heading"></div>
+          <div class="clock-row">
+            <div><span class="clock-label">Your clock</span><div id="human-clock" class="human-clock">3:00</div></div>
+            <span id="computer-status" role="status" aria-live="polite"></span>
+          </div>
+          <button class="btn" id="return-analysis">Stop / return to analysis</button>
+          <div class="hint-line">White's two actions share one turn and one increment.</div>
+        </div>
+        <div id="engine-error" class="engine-error" role="alert" hidden></div>
+      </section>
+
       <section>
         <div class="statusline">
           <span class="turn-meter" id="turn-meter"></span>
@@ -36,7 +66,7 @@
         </div>
       </section>
 
-      <section>
+      <section class="analysis-section">
         <div class="engine-head">
           <label class="switch">
             <input type="checkbox" id="engine-toggle" />
@@ -57,7 +87,7 @@
           <button class="btn primary" id="play-best" title="Play the engine's best move(s)">▶ best</button>
         </div>
         <div class="score-big" id="score-big">—</div>
-        <span class="solved-badge" id="solved-badge" style="display:none">FORCED WIN</span>
+        <span class="solved-badge" id="solved-badge" style="display:none">Winning line found</span>
         <div class="telemetry" id="telemetry">engine off</div>
         <div class="lines" id="lines"></div>
       </section>
@@ -82,7 +112,7 @@
           <button class="btn" id="btn-fen-load">load</button>
           <button class="btn" id="btn-fen-copy">copy</button>
         </div>
-        <div class="hint-line">
+        <div class="hint-line analysis-hint">
           <kbd>←</kbd><kbd>→</kbd> navigate · <kbd>f</kbd> flip · White plays two actions per turn;
           mid-turn FENs end in <kbd>m2</kbd>
         </div>
@@ -90,6 +120,6 @@
     </aside>
   </main>
 
-  <script type="module" src="main.js"></script>
+  <script type="module" src="main.js?v=e08a7cb0cd896325"></script>
 </body>
 </html>

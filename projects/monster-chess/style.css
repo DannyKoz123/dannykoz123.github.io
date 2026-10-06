@@ -324,6 +324,23 @@ select, .btn {
 .btn:hover, select:hover { border-color: var(--acc-dim); }
 .btn:active { transform: translateY(1px); }
 .btn.primary { color: var(--acc); border-color: var(--acc-dim); }
+.btn:disabled, select:disabled { opacity: 0.4; cursor: default; }
+[hidden] { display: none !important; }
+
+.play-heading { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.play-settings { display: grid; gap: 8px; color: var(--ink-dim); font-size: 12px; margin-bottom: 12px; }
+.play-settings label { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.clock-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.clock-label { color: var(--ink-dim); font-size: 11px; }
+.human-clock { font: 600 30px var(--mono); font-variant-numeric: tabular-nums; }
+.human-clock.running { color: var(--acc); }
+.human-clock.low-time { color: var(--bad); }
+#computer-status { color: var(--ink-dim); font-size: 13px; }
+.engine-error { color: var(--bad); margin-top: 10px; font-size: 12px; overflow-wrap: anywhere; }
+.playing .analysis-section, .playing .analysis-hint { display: none; }
+.playing .evalbar { display: none; }
+.playing .movelist .ply { cursor: default; }
+.moves-section:has(.movelist:empty) { display: none; }
 
 .score-big {
   font: 600 30px var(--mono);
@@ -420,4 +437,8 @@ select, .btn {
 @media (max-width: 1020px) {
   .layout { flex-direction: column; align-items: center; }
   .panel { width: min(94vw, 640px); }
+}
+
+@media (max-width: 600px) {
+  header.masthead { flex-direction: column; gap: 6px; }
 }
