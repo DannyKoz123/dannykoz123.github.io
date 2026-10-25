@@ -1,0 +1,32 @@
+# Demo 1: do Western/Chinese chip exports to Central Asia and the Caucasus
+# exceed what those countries report importing, and do their exports to
+# Russia surge after 2022?
+
+years = [2019, 2020, 2021, 2022, 2023, 2024]
+baseline_years = [2019, 2020, 2021]
+
+# Typical CIF/FOB margin (freight + insurance) used to make importer-reported
+# CIF values comparable with exporter-reported FOB values.
+cif_fob_factor = 1.06
+
+# UN M49 numeric codes, as used by Comtrade.
+[suppliers]
+CHN = 156
+DEU = 276
+USA = 842
+
+[intermediaries]
+KGZ = 417
+KAZ = 398
+ARM = 51
+
+[target]
+RUS = 643
+
+# Common High Priority List, Tier 1 (integrated circuits).
+# Extend from the official CHPL list before widening the demo.
+[products]
+"854231" = "Processors and controllers"
+"854232" = "Memories"
+"854233" = "Amplifiers"
+"854239" = "Other integrated circuits"

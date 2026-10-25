@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.env
+
+# Raw Comtrade data may not be redistributed (UN licence); keep it local.
+data/cache/
+output/
