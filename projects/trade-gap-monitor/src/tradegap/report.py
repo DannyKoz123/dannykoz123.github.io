@@ -36,7 +36,11 @@ def write_report(gaps: pd.DataFrame, reexports: pd.DataFrame, anomalies: pd.Data
     )
 
     table = anomalies[["year", "exporter", "importer", "product", "exp_value", "imp_fob", "gap",
-                       "gap_ratio"]].to_html(index=False, float_format=lambda v: f"{v:,.0f}")
+                       "gap_ratio"]].to_html(
+        index=False,
+        float_format=lambda v: f"{v:,.0f}",
+        formatters={"gap_ratio": lambda v: f"{v:+.0%}"},
+    )
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"""<!doctype html>

@@ -5,6 +5,7 @@ partner here, never as a reporter.
 """
 
 import hashlib
+import itertools
 import json
 import os
 import time
@@ -38,7 +39,8 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
         if resp.status_code != 429:
             break
         time.sleep(2 ** (attempt + 1))
-    resp.raise_for_status()
+    if resp.is_error:
+        raise RuntimeError(f"Comtrade HTTP {resp.status_code} for {params}: {resp.text[:300]}")
 
     payload = resp.json()
     if payload.get("error"):
@@ -55,19 +57,20 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
 def fetch_config(cfg: Config) -> pd.DataFrame:
     """Pull imports and exports for every non-target country in the config.
 
-    One call per reporter keeps each response well under the 500-row preview cap.
+    One call per reporter and year: the preview endpoint accepts a single
+    period, and this keeps each response well under its 500-row cap.
     """
     api_key = os.environ.get("COMTRADE_API_KEY") or None
     reporters = {**cfg.suppliers, **cfg.intermediaries}
     all_codes = [*reporters.values(), *cfg.target.values()]
     frames = []
     with httpx.Client(timeout=60) as client:
-        for code in reporters.values():
+        for code, year in itertools.product(reporters.values(), cfg.years):
             partners = [c for c in all_codes if c != code] + [WORLD]
             params = {
                 "reporterCode": code,
                 "partnerCode": ",".join(map(str, partners)),
-                "period": ",".join(map(str, cfg.years)),
+                "period": str(year),
                 "cmdCode": ",".join(cfg.products),
                 "flowCode": "M,X",
                 # Totals only: no second partner, customs regime or transport mode split.
