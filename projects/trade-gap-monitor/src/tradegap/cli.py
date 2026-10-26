@@ -121,7 +121,8 @@ def hk_reexports(
     start: int = 2021,
     end: int = 2025,
 ) -> None:
-    """Hong Kong re-exports vs domestic exports to each destination, by origin."""
+    """Hong Kong exports to each destination: re-exports by origin, and
+    re-exports vs domestic exports of the configured codes."""
     cfg = load_config(config)
     try:
         df = hkstat.fetch_reexports(dest or ["UZ", "RU"], list(cfg.products), start, end)
@@ -132,12 +133,17 @@ def hk_reexports(
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "hk_reexports.csv", index=False)
 
-    for (ttype, destination), part in df.groupby(["trade_type", "destination"]):
-        table = part.pivot_table(index="origin", columns="year", values="usd", aggfunc="sum")
-        table = table.sort_values(table.columns[-1] if len(table.columns) else "origin",
-                                  ascending=False) / 1e6
-        typer.echo(f"\n{ttype} to {destination}, USD millions, by origin:")
-        typer.echo(table.head(12).round(1).to_string())
+    def show(title: str, part: pd.DataFrame, index: str, n: int) -> None:
+        table = part.pivot_table(index=index, columns="year", values="usd", aggfunc="sum") / 1e6
+        table = table.sort_values(table.columns[-1], ascending=False)
+        typer.echo(f"\n{title}, USD millions:")
+        typer.echo(table.head(n).round(1).to_string())
+
+    for destination, part in df.groupby("destination"):
+        show(f"Re-exports to {destination} by origin (all goods)",
+             part[part["view"] == "by_origin"], "origin", 12)
+        show(f"Exports to {destination} of the configured codes, by trade type",
+             part[part["view"] == "by_product"], "trade_type", 2)
     typer.echo(f"\nCSV -> {out_dir / 'hk_reexports.csv'}")
 
 

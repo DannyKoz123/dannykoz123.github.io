@@ -203,12 +203,16 @@ def test_hk_reexports_parses_and_caches(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr(hkstat, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(hkstat.time, "sleep", lambda s: None)
-    record = {"period": "2023", "ttype": 3, "co": "US", "coDescEN": "USA", "cc": "UZ",
-              "ccDescEN": "UZBEKISTAN", "code": "854231", "figure": "78000"}
     calls = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        calls.append(request)
+        calls.append(dict(request.url.params))
+        record = {"period": "2023", "ttype": int(request.url.params["ttype"]),
+                  "cc": "UZ", "ccDescEN": "UZBEKISTAN", "figure": "78000"}
+        if "co" in request.url.params:
+            record.update({"co": "US", "coDescEN": "USA"})
+        else:
+            record.update({"code": "854231", "codeDescEN": "PROCESSORS"})
         return httpx.Response(200, json={"header": {"status": {"name": "Success", "code": 0}},
                                          "dataSet": [record]})
 
@@ -216,9 +220,12 @@ def test_hk_reexports_parses_and_caches(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(hkstat.httpx, "Client",
                         lambda **kw: real_client(transport=httpx.MockTransport(handler)))
     df = hkstat.fetch_reexports(["UZ"], ["854231"], 2023, 2023)
-    assert len(calls) == 2  # domestic exports + re-exports
-    domestic, reexports = (dict(c.url.params) for c in calls)
-    assert "co" not in domestic and reexports["co"] == "ALL"
-    assert df["usd"].iloc[0] == pytest.approx(10_000_000)  # HK$78M at 7.8
+
+    # origin and commodity are never combined; domestic exports never get an origin
+    assert len(calls) == 3
+    assert not any("co" in c and "code" in c for c in calls)
+    by_origin = df[df["view"] == "by_origin"].iloc[0]
+    assert by_origin["origin"] == "USA" and by_origin["usd"] == pytest.approx(10_000_000)
+    assert set(df[df["view"] == "by_product"]["trade_type"]) == {"domestic exports", "re-exports"}
     hkstat.fetch_reexports(["UZ"], ["854231"], 2023, 2023)
-    assert len(calls) == 2  # second run served from cache
+    assert len(calls) == 3  # second run served from cache

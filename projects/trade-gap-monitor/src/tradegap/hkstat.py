@@ -39,6 +39,9 @@ def fetch(params: dict, client: httpx.Client) -> list[dict]:
     status = payload["header"]["status"]
     if status["code"] == STATUS_USAGE_LIMIT:
         raise UsageLimit("Hong Kong's API usage limit reached; try again later")
+    if status["code"] != 0 and "No record found" in (status.get("message") or []):
+        status = {"code": 0}  # an empty result, reported as a failure
+        payload["dataSet"] = []
     if status["code"] != 0:
         raise RuntimeError(f"Hong Kong API {status['name']}: {status.get('message')} for {params}")
     records = payload.get("dataSet", [])
@@ -47,32 +50,41 @@ def fetch(params: dict, client: httpx.Client) -> list[dict]:
     return records
 
 
+def _query(client: httpx.Client, label: str, params: dict) -> list[dict]:
+    print(f"Hong Kong {label}...")
+    records = fetch(params, client)
+    time.sleep(2)
+    return records
+
+
 def fetch_reexports(destinations: list[str], codes: list[str], start: int, end: int) -> pd.DataFrame:
-    """Annual domestic exports and re-exports to each destination, by origin and
-    HS-6 code. Values are converted from HK$ '000 to USD."""
+    """Hong Kong exports to each destination in two views, USD:
+
+    - by_origin: re-exports of all goods by country of origin
+    - by_product: domestic exports and re-exports by HS-6 code
+
+    The API does not combine origin with commodity for re-exports, and has no
+    origin for domestic exports, so the two cannot be crossed.
+    """
+    period = {"sv": "VCy", "freq": "A", "period": f"{start},{end}"}
+    dest = {"ccclass": "C", "cc": ",".join(destinations)}
     rows = []
     # The site sets a session cookie and redirects before answering.
     with httpx.Client(timeout=180, follow_redirects=True) as client:
+        for r in _query(client, "re-exports by origin",
+                        {**period, **dest, "ttype": REEXPORTS, "coclass": "C", "co": "ALL"}):
+            rows.append({**r, "view": "by_origin"})
         for ttype, label in TRADE_TYPES.items():
             for i in range(0, len(codes), MAX_CODES):
-                params = {
-                    "sv": "VCy", "freq": "A", "period": f"{start},{end}", "ttype": ttype,
-                    "ccclass": "C", "cc": ",".join(destinations),
-                    "codeclass": "HKHS6", "code": ",".join(codes[i:i + MAX_CODES]),
-                }
-                # Origin only applies to re-exports; domestic exports are Hong Kong-made.
-                if ttype == REEXPORTS:
-                    params.update({"coclass": "C", "co": "ALL"})
-                print(f"Hong Kong {label}, codes {i + 1}-{i + MAX_CODES}...")
-                rows += fetch(params, client)
-                time.sleep(2)
+                params = {**period, **dest, "ttype": ttype, "codeclass": "HKHS6",
+                          "code": ",".join(codes[i:i + MAX_CODES])}
+                for r in _query(client, f"{label} by product, codes {i + 1}-{i + MAX_CODES}",
+                                params):
+                    rows.append({**r, "view": "by_product"})
     df = pd.DataFrame(rows)
     if df.empty:
         return df
     df["usd"] = pd.to_numeric(df["figure"], errors="coerce") * 1000 / HKD_PER_USD
     df["trade_type"] = df["ttype"].astype(int).map(TRADE_TYPES)
-    if "coDescEN" not in df:
-        df["coDescEN"] = None
-    df["coDescEN"] = df["coDescEN"].fillna("HONG KONG (domestic exports)")
     return df.rename(columns={"coDescEN": "origin", "ccDescEN": "destination",
-                              "period": "year"})
+                              "codeDescEN": "product", "period": "year"})
