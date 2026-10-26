@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
+from typing import Annotated
 
 import pandas as pd
 import typer
 from dotenv import load_dotenv
 
-from . import comtrade, drill, gaps, report
+from . import comtrade, drill, gaps, hkstat, report
 from .config import ROOT, Config, load_config
 
 app = typer.Typer(help="Mirror-trade gap monitor.")
@@ -111,6 +112,33 @@ def drill_cmd(
     for name, table in tables.items():
         table.to_csv(out_dir / f"{name}.csv")
     typer.echo(f"Report -> {out_dir / 'report.html'}")
+
+
+@app.command(name="hk-reexports")
+def hk_reexports(
+    dest: Annotated[list[str] | None, typer.Option(help="Hong Kong API country code; repeatable")] = None,
+    config: Path = DEFAULT_CONFIG,
+    start: int = 2021,
+    end: int = 2025,
+) -> None:
+    """Hong Kong re-exports vs domestic exports to each destination, by origin."""
+    cfg = load_config(config)
+    try:
+        df = hkstat.fetch_reexports(dest or ["UZ", "RU"], list(cfg.products), start, end)
+    except hkstat.UsageLimit as exc:
+        typer.echo(f"{exc}. Finished requests are cached; rerun later.")
+        raise typer.Exit(1) from exc
+    out_dir = cfg.output_dir / "hk_reexports"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_dir / "hk_reexports.csv", index=False)
+
+    for (ttype, destination), part in df.groupby(["trade_type", "destination"]):
+        table = part.pivot_table(index="origin", columns="year", values="usd", aggfunc="sum")
+        table = table.sort_values(table.columns[-1] if len(table.columns) else "origin",
+                                  ascending=False) / 1e6
+        typer.echo(f"\n{ttype} to {destination}, USD millions, by origin:")
+        typer.echo(table.head(12).round(1).to_string())
+    typer.echo(f"\nCSV -> {out_dir / 'hk_reexports.csv'}")
 
 
 @app.command()

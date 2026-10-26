@@ -196,3 +196,27 @@ def test_drill_monthly_series_and_report(tmp_path: Path):
     assert chips["unit_value"] == pytest.approx(10)
     assert chips["via_imports_world"] == pytest.approx(1e6)
     assert "Shipments vs what arrives" in (tmp_path / "r.html").read_text()
+
+
+def test_hk_reexports_parses_and_caches(tmp_path: Path, monkeypatch):
+    from tradegap import hkstat
+
+    monkeypatch.setattr(hkstat, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(hkstat.time, "sleep", lambda s: None)
+    record = {"period": "2023", "ttype": 3, "co": "US", "coDescEN": "USA", "cc": "UZ",
+              "ccDescEN": "UZBEKISTAN", "code": "854231", "figure": "78000"}
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(200, json={"header": {"status": {"name": "Success", "code": 0}},
+                                         "dataSet": [record]})
+
+    real_client = httpx.Client
+    monkeypatch.setattr(hkstat.httpx, "Client",
+                        lambda **kw: real_client(transport=httpx.MockTransport(handler)))
+    df = hkstat.fetch_reexports(["UZ"], ["854231"], 2023, 2023)
+    assert len(calls) == 2  # domestic exports + re-exports
+    assert df["usd"].iloc[0] == pytest.approx(10_000_000)  # HK$78M at 7.8
+    hkstat.fetch_reexports(["UZ"], ["854231"], 2023, 2023)
+    assert len(calls) == 2  # second run served from cache

@@ -35,6 +35,7 @@ uv run tradegap run                              # demo1: chips, 3 intermediarie
 uv run tradegap run --config config/scan.toml    # scan: 50 CHPL codes, 12 candidates
 uv run tradegap products --config config/scan.toml  # check each code's Comtrade description
 uv run tradegap drill --config config/scan.toml --origin HKG --via UZB  # monthly drill-down
+uv run tradegap hk-reexports --config config/scan.toml --dest UZ --dest RU  # HK re-exports by origin
 ```
 
 `run` is `fetch` + `analyze`; either can be run separately. The scan needs a
@@ -70,6 +71,7 @@ src/tradegap/
   gaps.py              normalization, mirror gaps, surges, ranking
   report.py            static HTML report
   drill.py             monthly drill-down on one route
+  hkstat.py            Hong Kong C&SD trade API (re-exports by origin)
   cli.py               `tradegap` command
 tests/                 unit tests (no network)
 ```
