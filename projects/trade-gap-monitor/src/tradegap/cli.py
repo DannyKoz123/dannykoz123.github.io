@@ -5,7 +5,7 @@ import pandas as pd
 import typer
 from dotenv import load_dotenv
 
-from . import comtrade, gaps, report
+from . import comtrade, drill, gaps, report
 from .config import ROOT, Config, load_config
 
 app = typer.Typer(help="Mirror-trade gap monitor.")
@@ -80,6 +80,37 @@ def analyze(config: Path = DEFAULT_CONFIG) -> None:
     out = cfg.output_dir / "report.html"
     report.write_report(tables, cfg, names, out)
     typer.echo(f"Report -> {out}")
+
+
+@app.command(name="drill")
+def drill_cmd(
+    origin: str = typer.Option(..., help="ISO3 of the shipping country, e.g. HKG"),
+    via: str = typer.Option(..., help="ISO3 of the suspected route, e.g. UZB"),
+    config: Path = DEFAULT_CONFIG,
+    start: int = 2021,
+    end: int = 2025,
+) -> None:
+    """Monthly drill-down on one route, e.g. --origin HKG --via UZB."""
+    load_dotenv(ROOT / ".env")
+    cfg = load_config(config)
+    if not os.environ.get("COMTRADE_API_KEY"):
+        raise typer.BadParameter("monthly drill-downs need COMTRADE_API_KEY in .env")
+    codes = {**cfg.suppliers, **cfg.intermediaries, **cfg.target}
+    missing = [c for c in (origin, via) if c not in codes]
+    if missing:
+        raise typer.BadParameter(f"not in {config.name}: {missing}")
+    years = list(range(start, end + 1))
+    raw = comtrade.fetch_drill(cfg, codes[origin], codes[via], years)
+    out_dir = cfg.output_dir / f"drill_{origin}_{via}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    raw.to_parquet(out_dir / "raw.parquet")
+
+    names = {**gaps.country_names(raw), **cfg.countries}
+    tables = drill.write_drill_report(drill.normalize_monthly(raw), codes[origin], codes[via],
+                                      cfg, names, out_dir / "report.html")
+    for name, table in tables.items():
+        table.to_csv(out_dir / f"{name}.csv")
+    typer.echo(f"Report -> {out_dir / 'report.html'}")
 
 
 @app.command()

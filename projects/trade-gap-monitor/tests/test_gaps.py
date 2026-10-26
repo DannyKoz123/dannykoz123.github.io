@@ -165,3 +165,34 @@ def test_fetch_retries_rate_limit_and_timeout(tmp_path: Path, monkeypatch):
     client = httpx.Client(transport=httpx.MockTransport(handler))
     df = comtrade.fetch({"reporterCode": KGZ, "period": "2023"}, "key", client)
     assert len(df) == 1
+
+
+def test_drill_monthly_series_and_report(tmp_path: Path):
+    from tradegap import drill
+
+    cfg = load_config(ROOT / "config" / "scan.toml")
+    HKG, UZB = 344, 860
+
+    def mrow(reporter, partner, flow, period, value, hs="854231", qty=None):
+        return {**row(reporter, partner, flow, int(str(period)[:4]), value, hs=hs),
+                "period": str(period), "qty": qty}
+
+    raw = pd.DataFrame([
+        mrow(HKG, UZB, "X", 202301, 10e6, qty=1e6),
+        mrow(HKG, UZB, "X", 202301, 5e6, hs="847150", qty=100),
+        mrow(HKG, RUS, "X", 202301, 3e6),
+        mrow(UZB, 0, "M", 202301, 1.06e6),
+        mrow(UZB, RUS, "X", 202301, 0.2e6),
+    ])
+    df = drill.normalize_monthly(raw)
+    names = {**gaps.country_names(raw), **cfg.countries}
+    tables = drill.write_drill_report(df, HKG, UZB, cfg, names, tmp_path / "r.html")
+
+    jan = tables["monthly"].loc[pd.Timestamp("2023-01-01")]
+    assert jan["HKG reports shipping to UZB"] == pytest.approx(15e6)
+    assert jan["UZB records imports from world"] == pytest.approx(1.06e6)
+    assert jan["UZB reports exports to Russia"] == pytest.approx(0.2e6)
+    chips = tables["products"].set_index("hs").loc["854231"]
+    assert chips["unit_value"] == pytest.approx(10)
+    assert chips["via_imports_world"] == pytest.approx(1e6)
+    assert "Shipments vs what arrives" in (tmp_path / "r.html").read_text()

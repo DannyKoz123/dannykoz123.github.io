@@ -34,6 +34,7 @@ Each config in `config/` writes to `output/<config name>/`.
 uv run tradegap run                              # demo1: chips, 3 intermediaries
 uv run tradegap run --config config/scan.toml    # scan: 50 CHPL codes, 12 candidates
 uv run tradegap products --config config/scan.toml  # check each code's Comtrade description
+uv run tradegap drill --config config/scan.toml --origin HKG --via UZB  # monthly drill-down
 ```
 
 `run` is `fetch` + `analyze`; either can be run separately. The scan needs a
@@ -68,6 +69,7 @@ src/tradegap/
   comtrade.py          API client + parquet cache
   gaps.py              normalization, mirror gaps, surges, ranking
   report.py            static HTML report
+  drill.py             monthly drill-down on one route
   cli.py               `tradegap` command
 tests/                 unit tests (no network)
 ```

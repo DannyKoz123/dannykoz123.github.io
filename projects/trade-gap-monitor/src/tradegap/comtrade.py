@@ -17,8 +17,9 @@ import pandas as pd
 
 from .config import CACHE_DIR, Config
 
-KEYED_URL = "https://comtradeapi.un.org/data/v1/get/C/A/HS"
-PREVIEW_URL = "https://comtradeapi.un.org/public/v1/preview/C/A/HS"
+# {freq} is A (annual) or M (monthly).
+KEYED_URL = "https://comtradeapi.un.org/data/v1/get/C/{freq}/HS"
+PREVIEW_URL = "https://comtradeapi.un.org/public/v1/preview/C/{freq}/HS"
 WORLD = 0
 # Totals only: no second partner, customs regime or transport mode split.
 TOTALS = {"partner2Code": WORLD, "customsCode": "C00", "motCode": 0, "includeDesc": "true"}
@@ -31,18 +32,21 @@ TIMEOUT_SECONDS = 300
 MAX_ATTEMPTS = 8
 
 
-def _cache_path(params: dict) -> Path:
-    digest = hashlib.sha1(json.dumps(params, sort_keys=True).encode()).hexdigest()[:16]
+def _cache_path(params: dict, freq: str) -> Path:
+    # Annual queries keep their original keys so existing caches stay valid.
+    keyed = params if freq == "A" else {**params, "freqCode": freq}
+    digest = hashlib.sha1(json.dumps(keyed, sort_keys=True).encode()).hexdigest()[:16]
     return CACHE_DIR / f"{digest}.parquet"
 
 
-def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFrame:
+def fetch(params: dict, api_key: str | None, client: httpx.Client,
+          freq: str = "A") -> pd.DataFrame:
     """Fetch one query, returning cached results when available."""
-    path = _cache_path(params)
+    path = _cache_path(params, freq)
     if path.exists():
         return pd.read_parquet(path)
 
-    url = KEYED_URL if api_key else PREVIEW_URL
+    url = (KEYED_URL if api_key else PREVIEW_URL).format(freq=freq)
     headers = {"Ocp-Apim-Subscription-Key": api_key} if api_key else {}
     limit = KEYED_MAX_RECORDS if api_key else PREVIEW_MAX_RECORDS
     request_params = {**params, "maxRecords": limit} if api_key else params
@@ -82,7 +86,7 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
     return df
 
 
-def _fetch_all(queries: list[dict], label: str) -> pd.DataFrame:
+def _fetch_all(queries: list[dict], label: str, freq: str = "A") -> pd.DataFrame:
     """Run queries one at a time. A query that still fails after retries is
     skipped and reported at the end; rerunning fetches only the missing ones."""
     api_key = os.environ.get("COMTRADE_API_KEY") or None
@@ -93,7 +97,7 @@ def _fetch_all(queries: list[dict], label: str) -> pd.DataFrame:
             print(f"\r{label}: fetching {i}/{len(queries)} "
                   f"({time.monotonic() - start:.0f}s elapsed)   ", end="", flush=True)
             try:
-                frames.append(fetch(q, api_key, client))
+                frames.append(fetch(q, api_key, client, freq))
             except RuntimeError as exc:
                 failures.append(str(exc))
     print(f"\r{label}: {len(queries) - len(failures)}/{len(queries)} done "
@@ -147,3 +151,23 @@ def fetch_world_mirror(cfg: Config) -> pd.DataFrame:
         for dest, period in itertools.product(destinations, _periods(cfg))
     ]
     return _fetch_all(queries, "world mirror")
+
+
+def fetch_drill(cfg: Config, origin: int, via: int, years: list[int]) -> pd.DataFrame:
+    """Monthly flows for one origin -> via route: what the origin reports
+    shipping to the via country, the other intermediaries and the target, and
+    what the via country reports importing and exporting. One call per side
+    and year (12 monthly periods)."""
+    others = [c for c in [*cfg.intermediaries.values(), *cfg.target.values()] if c != via]
+    sides = [
+        {"reporterCode": origin, "partnerCode": ",".join(map(str, [via, *others])),
+         "flowCode": "X"},
+        {"reporterCode": via,
+         "partnerCode": ",".join(map(str, [WORLD, origin, *others])), "flowCode": "M,X"},
+    ]
+    queries = [
+        {**side, "period": ",".join(f"{y}{m:02d}" for m in range(1, 13)),
+         "cmdCode": ",".join(cfg.products), **TOTALS}
+        for side, y in itertools.product(sides, years)
+    ]
+    return _fetch_all(queries, "monthly drill", freq="M")

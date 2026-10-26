@@ -213,7 +213,14 @@ def write_report(tables: dict[str, pd.DataFrame], cfg: Config, names: dict[int, 
         _bilateral_section(tables["mirror_gaps"], cfg, name),
         _coverage_section(tables["coverage"], name),
     ]
-    body = "".join(sections)
+    lede = (f"Source: UN Comtrade, {len(cfg.products)} HS codes, "
+            f"{cfg.years[0]}–{cfg.years[-1]}. Gaps and surges are leads, not evidence of "
+            "wrongdoing.")
+    write_page(path, cfg.title, lede, "".join(sections))
+
+
+def write_page(path: Path, title: str, lede: str, body: str) -> None:
+    """Write a self-contained page with plotly.js embedded."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Trade Gap Monitor</title>
@@ -229,8 +236,7 @@ td,th{{padding:5px 10px;border-bottom:1px solid #e5e5e5;white-space:nowrap}}
 th{{text-align:left;background:#f6f6f6}} table.num td{{text-align:right}}
 table.num td:first-child{{text-align:left}}
 </style></head><body>
-<h1>{cfg.title}</h1>
-<p class="lede">Source: UN Comtrade, {len(cfg.products)} HS codes, {cfg.years[0]}–{cfg.years[-1]}.
-Gaps and surges are leads, not evidence of wrongdoing.</p>
+<h1>{title}</h1>
+<p class="lede">{lede}</p>
 {body.replace("<table", '<div class="tbl"><table').replace("</table>", "</table></div>")}
 </body></html>""")
