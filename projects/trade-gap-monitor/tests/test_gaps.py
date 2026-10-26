@@ -99,3 +99,43 @@ def test_surge_table_baseline_zero_when_reported_nan_when_not():
     assert out["baseline"] == pytest.approx(200_000 / 3)
     assert out["peak_year"] == 2023
     assert out["multiple"] == pytest.approx(15)
+
+
+def test_scan_config_analysis_and_report_render(tmp_path: Path):
+    from tradegap import report
+
+    cfg = load_config(ROOT / "config" / "scan.toml")
+    TUR, CHN = 792, 156
+    rows = []
+    for y in cfg.years:
+        rows += [
+            row(TUR, 0, "M", y, 10_000_000, hs="854231"),
+            row(TUR, RUS, "X", y, 1_000_000 * (y - 2018), hs="854231"),
+            row(TUR, RUS, "X", y, 2_000_000, hs="848210"),
+            row(CHN, TUR, "X", y, 9_000_000, hs="854231"),
+            row(KGZ, RUS, "X", y, 500_000, hs="854239"),
+        ]
+    df = gaps.normalize(pd.DataFrame(rows))
+    world = gaps.normalize(pd.DataFrame([row(CHN, TUR, "X", y, 9_000_000) for y in cfg.years]))
+
+    surges = gaps.surge_table(df, cfg)
+    mirror = gaps.world_mirror(df, world, cfg)
+    ranking = gaps.scan_ranking(surges, mirror, cfg)
+    tiers = gaps.tier_breakdown(df, cfg)
+
+    top = ranking.iloc[0]
+    assert top["intermediary"] == TUR
+    # chips (y - 2018) M plus 2M of bearings: 2024-25 avg 8.5M vs 2022-23 avg 6.5M
+    assert top["recent_vs_prior"] == pytest.approx(8.5 / 6.5)
+    assert top["share_year"] == 2025
+    assert set(tiers[tiers["intermediary"] == TUR]["tier"]) == {"1", "3.B"}
+
+    tables = {
+        "ranking": ranking, "surges": surges, "tiers": tiers, "world_mirror": mirror,
+        "to_target": gaps.exports_to_target(world, cfg),
+        "mirror_gaps": gaps.mirror_gaps(df, cfg), "coverage": gaps.reporting_coverage(df, cfg),
+    }
+    out = tmp_path / "report.html"
+    report.write_report(tables, cfg, gaps.country_names(pd.DataFrame(rows)), out)
+    html = out.read_text()
+    assert "Scan ranking" in html and "Which kinds of goods" in html

@@ -22,6 +22,8 @@ WORLD = 0
 # Totals only: no second partner, customs regime or transport mode split.
 TOTALS = {"partner2Code": WORLD, "customsCode": "C00", "motCode": 0, "includeDesc": "true"}
 PAUSE_SECONDS = 2
+KEYED_MAX_RECORDS = 100_000
+PREVIEW_MAX_RECORDS = 500
 
 
 def _cache_path(params: dict) -> Path:
@@ -37,8 +39,10 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
 
     url = KEYED_URL if api_key else PREVIEW_URL
     headers = {"Ocp-Apim-Subscription-Key": api_key} if api_key else {}
+    limit = KEYED_MAX_RECORDS if api_key else PREVIEW_MAX_RECORDS
+    request_params = {**params, "maxRecords": limit} if api_key else params
     for attempt in range(5):
-        resp = client.get(url, params=params, headers=headers)
+        resp = client.get(url, params=request_params, headers=headers)
         if resp.status_code != 429:
             break
         time.sleep(2 ** (attempt + 1))
@@ -49,8 +53,9 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
     if payload.get("error"):
         raise RuntimeError(f"Comtrade error for {params}: {payload['error']}")
     df = pd.DataFrame(payload.get("data") or [])
-    if not api_key and len(df) >= 500:
-        raise RuntimeError(f"Preview endpoint truncated at 500 rows for {params}; set an API key")
+    if len(df) >= limit:
+        hint = "narrow the query" if api_key else "set COMTRADE_API_KEY in .env"
+        raise RuntimeError(f"Response truncated at {limit} rows for {params}; {hint}")
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     df.to_parquet(path)
@@ -58,10 +63,14 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
     return df
 
 
-def _fetch_all(queries: list[dict]) -> pd.DataFrame:
+def _fetch_all(queries: list[dict], label: str) -> pd.DataFrame:
     api_key = os.environ.get("COMTRADE_API_KEY") or None
-    with httpx.Client(timeout=60) as client:
-        frames = [fetch(q, api_key, client) for q in queries]
+    frames = []
+    with httpx.Client(timeout=120) as client:
+        for i, q in enumerate(queries, 1):
+            print(f"\r{label}: {i}/{len(queries)}", end="", flush=True)
+            frames.append(fetch(q, api_key, client))
+    print()
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
@@ -85,7 +94,7 @@ def fetch_config(cfg: Config) -> pd.DataFrame:
         }
         for code, year in itertools.product(reporters.values(), cfg.years)
     ]
-    return _fetch_all(queries)
+    return _fetch_all(queries, "bilateral flows")
 
 
 def fetch_world_mirror(cfg: Config) -> pd.DataFrame:
@@ -101,4 +110,4 @@ def fetch_world_mirror(cfg: Config) -> pd.DataFrame:
         }
         for dest, year in itertools.product(destinations, cfg.years)
     ]
-    return _fetch_all(queries)
+    return _fetch_all(queries, "world mirror")

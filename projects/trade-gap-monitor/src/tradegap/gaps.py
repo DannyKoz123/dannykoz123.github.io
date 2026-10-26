@@ -177,3 +177,49 @@ def top_anomalies(gaps: pd.DataFrame, since: int = 2022, n: int = 20) -> pd.Data
     """Largest absolute post-invasion mirror gaps, in USD."""
     recent = gaps[(gaps["year"] >= since) & gaps["gap"].notna()]
     return recent.reindex(recent["gap"].abs().sort_values(ascending=False).index).head(n)
+
+
+def scan_ranking(surges: pd.DataFrame, world: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    """Rank intermediaries by how much they ship to the target in the latest
+    two years, and whether that is growing relative to the years before."""
+    recent = cfg.years[-2:]
+    prior = [y for y in cfg.years if y not in cfg.baseline_years and y not in recent]
+    out = surges[["intermediary", "baseline", *[y for y in cfg.years if y not in
+                                                cfg.baseline_years]]].copy()
+    out["recent_vs_prior"] = out[recent].mean(axis=1) / out[prior].mean(axis=1)
+    latest = (
+        world.dropna(subset=["pass_through"]).sort_values("year")
+        .groupby("intermediary").last()[["year", "pass_through"]]
+        .rename(columns={"year": "share_year", "pass_through": "share_to_target"})
+    )
+    out = out.merge(latest, left_on="intermediary", right_index=True, how="left")
+    out["recent_max"] = out[recent].max(axis=1)
+    return out.sort_values("recent_max", ascending=False).reset_index(drop=True)
+
+
+def tier_breakdown(df: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    """Intermediary exports to the target by product tier and year."""
+    flows = df[
+        (df["flow"] == "X")
+        & df["reporter"].isin(cfg.intermediaries.values())
+        & df["partner"].isin(cfg.target.values())
+    ].copy()
+    flows["tier"] = flows["hs"].map(cfg.product_tier).fillna("other")
+    out = flows.groupby(["reporter", "tier", "year"])["value"].sum().unstack()
+    out = out.reindex(columns=cfg.years)
+    out.columns.name = None
+    return out.reset_index().rename(columns={"reporter": "intermediary"})
+
+
+def product_check(raw: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    """Comtrade's own description and row count for each configured code."""
+    desc = raw.dropna(subset=["cmdDesc"]).groupby("cmdCode")["cmdDesc"].first() \
+        if "cmdDesc" in raw else pd.Series(dtype=str)
+    rows = raw.groupby("cmdCode").size() if not raw.empty else pd.Series(dtype=int)
+    return pd.DataFrame({
+        "hs": list(cfg.products),
+        "tier": [cfg.product_tier.get(hs, "") for hs in cfg.products],
+        "config_name": list(cfg.products.values()),
+        "comtrade_description": [desc.get(hs, "") for hs in cfg.products],
+        "rows": [int(rows.get(hs, 0)) for hs in cfg.products],
+    })

@@ -2,6 +2,7 @@
 # exceed what those countries report importing, and do their exports to
 # Russia surge after 2022?
 
+title = "Trade Gap Monitor: integrated circuits via Central Asia and the Caucasus"
 years = [2019, 2020, 2021, 2022, 2023, 2024]
 baseline_years = [2019, 2020, 2021]
 

@@ -28,18 +28,21 @@ is enough for Demo 1. Get a free key at <https://comtradedeveloper.un.org>.
 
 ## Run
 
+Each config in `config/` writes to `output/<config name>/`.
+
 ```sh
-uv run tradegap run      # fetch + analyze
-# or separately:
-uv run tradegap fetch
-uv run tradegap analyze
+uv run tradegap run                              # demo1: chips, 3 intermediaries
+uv run tradegap run --config config/scan.toml    # scan: 50 CHPL codes, 12 candidates
+uv run tradegap products --config config/scan.toml  # check each code's Comtrade description
 ```
 
-Outputs go to `output/`: `demo1.html` (self-contained report, opens offline)
-and one CSV per table: `surges`, `world_mirror`, `to_target`, `mirror_gaps`,
-`coverage`. API responses are cached in `data/cache/`.
-Neither directory is committed: the Comtrade licence restricts redistributing
-raw data, so publish derived charts only.
+`run` is `fetch` + `analyze`; either can be run separately. The scan needs a
+Comtrade API key (about 230 requests, under the free 500/day). Interrupted
+fetches resume from the cache in `data/cache/`.
+
+Outputs: `report.html` (self-contained, opens offline) and one CSV per table.
+Neither `output/` nor `data/cache/` is committed: the Comtrade licence
+restricts redistributing raw data, so publish derived charts only.
 
 ## Method
 
@@ -59,7 +62,7 @@ raw data, so publish derived charts only.
 ## Layout
 
 ```
-config/demo1.toml      countries, HS codes, years
+config/*.toml          countries, HS codes and tiers, years
 src/tradegap/
   comtrade.py          API client + parquet cache
   gaps.py              normalization, mirror gaps, surges, ranking
