@@ -23,6 +23,8 @@ WORLD = 0
 TOTALS = {"partner2Code": WORLD, "customsCode": "C00", "motCode": 0, "includeDesc": "true"}
 PAUSE_SECONDS = 2
 KEYED_MAX_RECORDS = 100_000
+# The keyed endpoint takes several periods per call; the preview takes one.
+KEYED_MAX_PERIODS = 12
 PREVIEW_MAX_RECORDS = 500
 
 
@@ -45,7 +47,9 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
         resp = client.get(url, params=request_params, headers=headers)
         if resp.status_code != 429:
             break
-        time.sleep(2 ** (attempt + 1))
+        wait = 2 ** (attempt + 1)
+        print(f"  [rate limited by Comtrade, retrying in {wait}s]", end="", flush=True)
+        time.sleep(wait)
     if resp.is_error:
         raise RuntimeError(f"Comtrade HTTP {resp.status_code} for {params}: {resp.text[:300]}")
 
@@ -66,33 +70,41 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
 def _fetch_all(queries: list[dict], label: str) -> pd.DataFrame:
     api_key = os.environ.get("COMTRADE_API_KEY") or None
     frames = []
-    with httpx.Client(timeout=120) as client:
+    start = time.monotonic()
+    with httpx.Client(timeout=180) as client:
         for i, q in enumerate(queries, 1):
-            print(f"\r{label}: {i}/{len(queries)}", end="", flush=True)
             frames.append(fetch(q, api_key, client))
+            elapsed = time.monotonic() - start
+            print(f"\r{label}: {i}/{len(queries)} ({elapsed:.0f}s)", end="", flush=True)
     print()
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
-def fetch_config(cfg: Config) -> pd.DataFrame:
-    """Imports and exports reported by every supplier and intermediary.
+def _periods(cfg: Config) -> list[str]:
+    """Period batches per call: all years with a key, one year without."""
+    if not os.environ.get("COMTRADE_API_KEY"):
+        return [str(y) for y in cfg.years]
+    years = [str(y) for y in cfg.years]
+    return [",".join(years[i:i + KEYED_MAX_PERIODS])
+            for i in range(0, len(years), KEYED_MAX_PERIODS)]
 
-    One call per reporter and year: the preview endpoint accepts a single
-    period, and this keeps each response well under its 500-row cap.
-    """
+
+def fetch_config(cfg: Config) -> pd.DataFrame:
+    """Imports and exports reported by every supplier and intermediary,
+    one call per reporter and period batch."""
     reporters = {**cfg.suppliers, **cfg.intermediaries}
     all_codes = [*reporters.values(), *cfg.target.values()]
     queries = [
         {
             "reporterCode": code,
             "partnerCode": ",".join(str(c) for c in [*all_codes, WORLD] if c != code),
-            "period": str(year),
+            "period": period,
             "cmdCode": ",".join(cfg.products),
             "flowCode": "M,X",
             **TOTALS,
         }
-        for code, year in itertools.product(reporters.values(), cfg.years)
+        for code, period in itertools.product(reporters.values(), _periods(cfg))
     ]
     return _fetch_all(queries, "bilateral flows")
 
@@ -103,11 +115,11 @@ def fetch_world_mirror(cfg: Config) -> pd.DataFrame:
     queries = [
         {
             "partnerCode": dest,
-            "period": str(year),
+            "period": period,
             "cmdCode": ",".join(cfg.products),
             "flowCode": "X",
             **TOTALS,
         }
-        for dest, year in itertools.product(destinations, cfg.years)
+        for dest, period in itertools.product(destinations, _periods(cfg))
     ]
     return _fetch_all(queries, "world mirror")
