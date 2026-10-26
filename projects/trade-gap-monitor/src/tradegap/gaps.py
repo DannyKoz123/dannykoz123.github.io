@@ -49,6 +49,13 @@ def normalize(raw: pd.DataFrame) -> pd.DataFrame:
     return out.groupby(["reporter", "partner", "flow", "hs", "year"], as_index=False)["value"].sum()
 
 
+def combine(df: pd.DataFrame, world: pd.DataFrame) -> pd.DataFrame:
+    """Merge intermediary-reported rows with world-mirror rows, keeping one
+    copy of flows that appear in both (e.g. intermediary exports to Russia)."""
+    keys = ["reporter", "partner", "flow", "hs", "year"]
+    return pd.concat([df, world]).drop_duplicates(keys).reset_index(drop=True)
+
+
 def reporting_coverage(df: pd.DataFrame, cfg: Config) -> pd.DataFrame:
     """Which configured reporters returned any rows in each year."""
     codes = [*cfg.suppliers.values(), *cfg.intermediaries.values()]

@@ -9,6 +9,7 @@ import itertools
 import json
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import httpx
@@ -25,6 +26,10 @@ PAUSE_SECONDS = 2
 KEYED_MAX_RECORDS = 100_000
 # The keyed endpoint takes several periods per call; the preview takes one.
 KEYED_MAX_PERIODS = 12
+# Comtrade is slow per request (~1-2 min for large keyed queries), so a few run
+# side by side. The keyless preview is rate limited harder; keep it serial.
+KEYED_WORKERS = 3
+TIMEOUT_SECONDS = 300
 PREVIEW_MAX_RECORDS = 500
 
 
@@ -69,14 +74,23 @@ def fetch(params: dict, api_key: str | None, client: httpx.Client) -> pd.DataFra
 
 def _fetch_all(queries: list[dict], label: str) -> pd.DataFrame:
     api_key = os.environ.get("COMTRADE_API_KEY") or None
-    frames = []
     start = time.monotonic()
-    with httpx.Client(timeout=180) as client:
-        for i, q in enumerate(queries, 1):
-            print(f"\r{label}: fetching {i}/{len(queries)} "
-                  f"({time.monotonic() - start:.0f}s elapsed)   ", end="", flush=True)
-            frames.append(fetch(q, api_key, client))
-    print(f"\r{label}: done, {len(queries)} requests in {time.monotonic() - start:.0f}s   ")
+    done = 0
+
+    def progress() -> None:
+        print(f"\r{label}: {done}/{len(queries)} done "
+              f"({time.monotonic() - start:.0f}s elapsed)   ", end="", flush=True)
+
+    progress()
+    with httpx.Client(timeout=TIMEOUT_SECONDS) as client, \
+            ThreadPoolExecutor(KEYED_WORKERS if api_key else 1) as pool:
+        futures = [pool.submit(fetch, q, api_key, client) for q in queries]
+        frames = []
+        for future in as_completed(futures):
+            frames.append(future.result())
+            done += 1
+            progress()
+    print()
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
@@ -91,8 +105,9 @@ def _periods(cfg: Config) -> list[str]:
 
 
 def fetch_config(cfg: Config) -> pd.DataFrame:
-    """Imports and exports reported by every supplier and intermediary,
-    one call per reporter and period batch."""
+    """Imports and exports reported by each intermediary, one call per
+    intermediary and period batch. Suppliers' exports to intermediaries come
+    from the world mirror instead."""
     reporters = {**cfg.suppliers, **cfg.intermediaries}
     all_codes = [*reporters.values(), *cfg.target.values()]
     queries = [
@@ -104,9 +119,9 @@ def fetch_config(cfg: Config) -> pd.DataFrame:
             "flowCode": "M,X",
             **TOTALS,
         }
-        for code, period in itertools.product(reporters.values(), _periods(cfg))
+        for code, period in itertools.product(cfg.intermediaries.values(), _periods(cfg))
     ]
-    return _fetch_all(queries, "bilateral flows")
+    return _fetch_all(queries, "intermediary flows")
 
 
 def fetch_world_mirror(cfg: Config) -> pd.DataFrame:

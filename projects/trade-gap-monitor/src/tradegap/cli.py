@@ -60,7 +60,8 @@ def analyze(config: Path = DEFAULT_CONFIG) -> None:
     raw_path, world_path = _paths(cfg)
     raw, raw_world = pd.read_parquet(raw_path), pd.read_parquet(world_path)
     names = gaps.country_names(pd.concat([raw, raw_world]))
-    df, world = gaps.normalize(raw), gaps.normalize(raw_world)
+    world = gaps.normalize(raw_world)
+    df = gaps.combine(gaps.normalize(raw), world)
 
     surges = gaps.surge_table(df, cfg)
     world_mirror = gaps.world_mirror(df, world, cfg)

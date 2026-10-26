@@ -139,3 +139,11 @@ def test_scan_config_analysis_and_report_render(tmp_path: Path):
     report.write_report(tables, cfg, gaps.country_names(pd.DataFrame(rows)), out)
     html = out.read_text()
     assert "Scan ranking" in html and "Which kinds of goods" in html
+
+
+def test_combine_keeps_one_copy_of_shared_flows():
+    own = gaps.normalize(pd.DataFrame([row(KGZ, RUS, "X", 2023, 100), row(KGZ, 0, "M", 2023, 5)]))
+    world = gaps.normalize(pd.DataFrame([row(KGZ, RUS, "X", 2023, 100), row(DEU, KGZ, "X", 2023, 7)]))
+    out = gaps.combine(own, world)
+    assert len(out) == 3
+    assert out[(out["reporter"] == KGZ) & (out["partner"] == RUS)]["value"].item() == 100
