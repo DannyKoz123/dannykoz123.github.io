@@ -147,3 +147,21 @@ def test_combine_keeps_one_copy_of_shared_flows():
     out = gaps.combine(own, world)
     assert len(out) == 3
     assert out[(out["reporter"] == KGZ) & (out["partner"] == RUS)]["value"].item() == 100
+
+
+def test_fetch_retries_rate_limit_and_timeout(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(comtrade, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(comtrade.time, "sleep", lambda s: None)
+    replies = iter(["timeout", 429, 200])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        reply = next(replies)
+        if reply == "timeout":
+            raise httpx.ReadTimeout("slow", request=request)
+        if reply == 429:
+            return httpx.Response(429, json={"message": "Try again in 1 seconds."})
+        return httpx.Response(200, json={"data": [row(KGZ, DEU, "M", 2023, 1)], "error": ""})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    df = comtrade.fetch({"reporterCode": KGZ, "period": "2023"}, "key", client)
+    assert len(df) == 1
