@@ -73,10 +73,10 @@ def _fetch_all(queries: list[dict], label: str) -> pd.DataFrame:
     start = time.monotonic()
     with httpx.Client(timeout=180) as client:
         for i, q in enumerate(queries, 1):
+            print(f"\r{label}: fetching {i}/{len(queries)} "
+                  f"({time.monotonic() - start:.0f}s elapsed)   ", end="", flush=True)
             frames.append(fetch(q, api_key, client))
-            elapsed = time.monotonic() - start
-            print(f"\r{label}: {i}/{len(queries)} ({elapsed:.0f}s)", end="", flush=True)
-    print()
+    print(f"\r{label}: done, {len(queries)} requests in {time.monotonic() - start:.0f}s   ")
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
