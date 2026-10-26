@@ -16,6 +16,7 @@ from .config import CACHE_DIR
 
 API_URL = "https://tradeidds.censtatd.gov.hk/api/get"
 TRADE_TYPES = {2: "domestic exports", 3: "re-exports"}
+REEXPORTS = 3
 HKD_PER_USD = 7.8  # linked exchange rate band 7.75-7.85
 MAX_CODES = 20  # API limit per request
 STATUS_USAGE_LIMIT = 2
@@ -56,10 +57,12 @@ def fetch_reexports(destinations: list[str], codes: list[str], start: int, end: 
             for i in range(0, len(codes), MAX_CODES):
                 params = {
                     "sv": "VCy", "freq": "A", "period": f"{start},{end}", "ttype": ttype,
-                    "coclass": "C", "co": "ALL",
                     "ccclass": "C", "cc": ",".join(destinations),
                     "codeclass": "HKHS6", "code": ",".join(codes[i:i + MAX_CODES]),
                 }
+                # Origin only applies to re-exports; domestic exports are Hong Kong-made.
+                if ttype == REEXPORTS:
+                    params.update({"coclass": "C", "co": "ALL"})
                 print(f"Hong Kong {label}, codes {i + 1}-{i + MAX_CODES}...")
                 rows += fetch(params, client)
                 time.sleep(2)
@@ -68,5 +71,8 @@ def fetch_reexports(destinations: list[str], codes: list[str], start: int, end: 
         return df
     df["usd"] = pd.to_numeric(df["figure"], errors="coerce") * 1000 / HKD_PER_USD
     df["trade_type"] = df["ttype"].astype(int).map(TRADE_TYPES)
+    if "coDescEN" not in df:
+        df["coDescEN"] = None
+    df["coDescEN"] = df["coDescEN"].fillna("HONG KONG (domestic exports)")
     return df.rename(columns={"coDescEN": "origin", "ccDescEN": "destination",
                               "period": "year"})

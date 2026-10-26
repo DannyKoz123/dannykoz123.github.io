@@ -217,6 +217,8 @@ def test_hk_reexports_parses_and_caches(tmp_path: Path, monkeypatch):
                         lambda **kw: real_client(transport=httpx.MockTransport(handler)))
     df = hkstat.fetch_reexports(["UZ"], ["854231"], 2023, 2023)
     assert len(calls) == 2  # domestic exports + re-exports
+    domestic, reexports = (dict(c.url.params) for c in calls)
+    assert "co" not in domestic and reexports["co"] == "ALL"
     assert df["usd"].iloc[0] == pytest.approx(10_000_000)  # HK$78M at 7.8
     hkstat.fetch_reexports(["UZ"], ["854231"], 2023, 2023)
     assert len(calls) == 2  # second run served from cache
