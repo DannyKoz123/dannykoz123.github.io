@@ -37,7 +37,8 @@ uv run tradegap products --config config/scan.toml  # check each code's Comtrade
 ```
 
 `run` is `fetch` + `analyze`; either can be run separately. The scan needs a
-Comtrade API key (about 230 requests, under the free 500/day). Interrupted
+Comtrade API key: 175 one-year requests, about 45 minutes, under the free
+500/day. Interrupted
 fetches resume from the cache in `data/cache/`.
 
 Outputs: `report.html` (self-contained, opens offline) and one CSV per table.
