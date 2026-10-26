@@ -10,10 +10,16 @@ baseline_years = [2019, 2020, 2021]
 cif_fob_factor = 1.06
 
 # UN M49 numeric codes, as used by Comtrade.
+# Hubs (HKG, ARE) and chip producers (TWN, MYS) are included because
+# importers record country of origin, not the country goods shipped from.
 [suppliers]
 CHN = 156
 DEU = 276
 USA = 842
+HKG = 344
+TWN = 490  # Comtrade lists Taiwan as "Other Asia, nes"
+MYS = 458
+ARE = 784
 
 [intermediaries]
 KGZ = 417
